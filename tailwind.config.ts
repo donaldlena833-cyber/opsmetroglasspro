@@ -6,6 +6,7 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -40,6 +41,14 @@ const config: Config = {
           800: '#A66A11',
           900: '#80520D',
         },
+        // V2: Dark mode colors
+        dark: {
+          bg: '#0f172a',
+          card: '#1e293b',
+          border: '#334155',
+          text: '#f1f5f9',
+          muted: '#94a3b8',
+        },
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
@@ -49,6 +58,8 @@ const config: Config = {
         'card': '0 1px 3px 0 rgba(27, 43, 90, 0.05), 0 1px 2px -1px rgba(27, 43, 90, 0.05)',
         'card-hover': '0 4px 6px -1px rgba(27, 43, 90, 0.07), 0 2px 4px -2px rgba(27, 43, 90, 0.05)',
         'sheet': '0 -4px 20px -5px rgba(27, 43, 90, 0.1)',
+        // Dark mode shadows
+        'card-dark': '0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2)',
       },
       animation: {
         'slide-up': 'slideUp 0.3s ease-out',
