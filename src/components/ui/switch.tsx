@@ -15,21 +15,21 @@ const Switch = React.forwardRef<
     {(label || description) && (
       <div className="flex-1 mr-3">
         {label && (
-          <label className="text-sm font-medium text-navy-800 cursor-pointer">
+          <label className="text-sm font-medium text-navy-800 dark:text-dark-text cursor-pointer">
             {label}
           </label>
         )}
         {description && (
-          <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+          <p className="text-xs text-gray-500 dark:text-dark-muted mt-0.5">{description}</p>
         )}
       </div>
     )}
     <SwitchPrimitives.Root
       className={cn(
         'peer inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-card',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-200',
+        'data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-200 dark:data-[state=unchecked]:bg-gray-600',
         className
       )}
       {...props}

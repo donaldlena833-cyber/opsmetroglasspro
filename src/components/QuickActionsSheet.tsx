@@ -90,7 +90,7 @@ export function QuickActionsSheet({ open, onOpenChange }: QuickActionsSheetProps
               <button
                 key={action.href}
                 onClick={() => handleAction(action.href)}
-                className="flex items-center w-full p-4 rounded-xl bg-white border border-gray-100 shadow-sm transition-all active:scale-[0.98] hover:shadow-md"
+                className="flex items-center w-full p-4 rounded-xl bg-white dark:bg-dark-card border border-gray-100 dark:border-dark-border shadow-sm transition-all active:scale-[0.98] hover:shadow-md"
               >
                 <div className={cn(
                   'flex items-center justify-center w-12 h-12 rounded-xl text-white',
@@ -99,8 +99,8 @@ export function QuickActionsSheet({ open, onOpenChange }: QuickActionsSheetProps
                   <Icon className="h-6 w-6" />
                 </div>
                 <div className="ml-4 text-left">
-                  <p className="font-medium text-navy-800">{action.label}</p>
-                  <p className="text-sm text-gray-500">{action.description}</p>
+                  <p className="font-medium text-navy-800 dark:text-dark-text">{action.label}</p>
+                  <p className="text-sm text-gray-500 dark:text-dark-muted">{action.description}</p>
                 </div>
               </button>
             )
@@ -109,7 +109,7 @@ export function QuickActionsSheet({ open, onOpenChange }: QuickActionsSheetProps
 
         <div className="px-4 pb-4">
           <SheetClose asChild>
-            <button className="w-full py-3 text-center text-gray-500 font-medium">
+            <button className="w-full py-3 text-center text-gray-500 dark:text-dark-muted font-medium">
               Cancel
             </button>
           </SheetClose>

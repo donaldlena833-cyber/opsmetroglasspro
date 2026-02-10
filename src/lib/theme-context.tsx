@@ -9,9 +9,20 @@ interface ThemeContextType {
   theme: Theme
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
+  mounted: boolean
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+
+// Script to prevent flash - runs before React hydrates
+const themeScript = `
+  (function() {
+    const theme = localStorage.getItem('theme') || 'light'
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    }
+  })()
+`
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light')
@@ -28,8 +39,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!mounted) return
-    
     // Apply theme to document
     const root = document.documentElement
     if (theme === 'dark') {
@@ -41,9 +50,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Update meta theme-color
     const metaThemeColor = document.querySelector('meta[name="theme-color"]')
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', theme === 'dark' ? '#0f172a' : '#1B2B5A')
+      metaThemeColor.setAttribute('content', theme === 'dark' ? '#1A1D23' : '#FBF7F0')
     }
-  }, [theme, mounted])
+  }, [theme])
 
   const setTheme = async (newTheme: Theme) => {
     setThemeState(newTheme)
@@ -66,13 +75,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(theme === 'light' ? 'dark' : 'light')
   }
 
-  // Prevent flash on initial load
-  if (!mounted) {
-    return null
-  }
-
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, mounted }}>
+      {/* Inject script to prevent flash before hydration */}
+      <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       {children}
     </ThemeContext.Provider>
   )

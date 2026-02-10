@@ -28,10 +28,10 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-gray-200 bg-white text-navy-800',
-        success: 'border-green-200 bg-green-50 text-green-800',
-        destructive: 'border-red-200 bg-red-50 text-red-800',
-        warning: 'border-orange-200 bg-orange-50 text-orange-800',
+        default: 'border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card text-navy-800 dark:text-dark-text',
+        success: 'border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-400',
+        destructive: 'border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400',
+        warning: 'border-orange-200 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400',
       },
     },
     defaultVariants: {
@@ -62,7 +62,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-transparent px-3 text-sm font-medium transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-navy-500 disabled:pointer-events-none disabled:opacity-50',
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 dark:border-dark-border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-dark-border focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:pointer-events-none disabled:opacity-50',
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-gray-400 opacity-0 transition-opacity hover:text-gray-600 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
+      'absolute right-2 top-2 rounded-md p-1 text-gray-400 dark:text-dark-muted opacity-0 transition-opacity hover:text-gray-600 dark:hover:text-gray-300 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
       className
     )}
     toast-close=""
