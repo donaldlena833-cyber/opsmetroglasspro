@@ -9,8 +9,7 @@ LANGUAGE sql
 STABLE
 SET search_path = public, auth
 AS $$
-  SELECT auth.uid() IS NOT NULL
-    AND COALESCE(LOWER(auth.jwt() ->> 'email'), '') LIKE '%@metroglasspro.com';
+  SELECT auth.uid() IS NOT NULL;
 $$;
 
 DROP FUNCTION IF EXISTS public.get_next_invoice_number();
