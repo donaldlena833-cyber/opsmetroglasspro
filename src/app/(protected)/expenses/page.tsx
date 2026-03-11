@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
+import { signExpenseReceiptUrls } from '@/lib/storage'
 import { ExpensesDashboard } from './ExpensesDashboard'
 
 export const dynamic = 'force-dynamic'
@@ -45,7 +46,7 @@ async function getExpensesData() {
   }, {} as Record<string, number>) || {}
 
   return {
-    expenses: allExpenses || [],
+    expenses: await signExpenseReceiptUrls(supabase, allExpenses || []),
     thisMonthTotal,
     lastMonthTotal,
     categoryBreakdown,

@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { jsPDF } from 'jspdf'
 import { format } from 'date-fns'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+import { getServiceSupabaseEnv } from '@/lib/env'
 
 interface LineItem {
   description: string
@@ -15,6 +13,7 @@ interface LineItem {
 
 export async function POST(request: NextRequest) {
   try {
+    const { url: supabaseUrl, serviceRoleKey: supabaseServiceKey } = getServiceSupabaseEnv()
     const { invoiceId } = await request.json()
 
     if (!invoiceId) {

@@ -27,13 +27,13 @@ Internal operations system for MetroGlass Pro Inc - a custom shower glass instal
 - **Client Management**: Track client information with stats dashboard
 - **PWA Support**: Install as a home screen app on iOS/Android
 - **Dark Mode**: Manual toggle for light/dark themes
+- **Private Receipt Previews**: Receipts render through signed URLs so the `receipts` bucket can stay private
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
 - **Backend**: Supabase (PostgreSQL, Auth, Storage)
 - **PDF Generation**: jsPDF
-- **AI**: Google Gemini Flash for receipt extraction
 - **Deployment**: Vercel
 
 ## Setup Instructions
@@ -49,10 +49,10 @@ Internal operations system for MetroGlass Pro Inc - a custom shower glass instal
    - Go to Storage > Create Bucket
    - Create `receipts` bucket (private)
    - Create `invoices` bucket (public)
-5. Create Users:
-   - Go to Authentication > Users > Add User
-   - Create user: `donaldlena@metroglasspro.com` / `metroglasspro9896`
-   - Create user: `ledionlico@metroglasspro.com` / `metroglasspro9896`
+5. Invite or create your internal users in Supabase Auth.
+6. Run the latest security migration:
+   - `supabase/migrations/003_security_hardening.sql`
+   - This tightens RLS, fixes mutable function `search_path`, and makes reporting views use `security_invoker`.
 
 ### 2. Environment Variables
 
@@ -62,7 +62,6 @@ Create a `.env.local` file:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-GOOGLE_AI_API_KEY=your-google-ai-key
 NEXT_PUBLIC_APP_URL=https://ops.metroglasspro.com
 ```
 
@@ -82,11 +81,12 @@ Open [http://localhost:3000](http://localhost:3000)
 3. Add environment variables in Vercel dashboard
 4. Deploy
 
-### 5. V2 Migration (Existing Deployments)
+### 5. Existing Deployment Migrations
 
-If upgrading from V1, run the migration in Supabase SQL Editor:
+If upgrading an existing deployment, run the migrations in Supabase SQL Editor:
 ```sql
 -- Run this file: supabase/migrations/002_v2_enhancements.sql
+-- Then run: supabase/migrations/003_security_hardening.sql
 ```
 
 ### 6. Custom Domain Setup
@@ -115,8 +115,12 @@ Access from Settings to view:
 - Revenue by payment method
 - Job profit margins
 
+### Receipts
+- Uploaded receipts are stored as Supabase Storage object paths.
+- Expenses and job detail screens generate signed URLs on the server so receipt previews work with a private bucket.
+
 ### Dark Mode
 Toggle in Settings > Appearance
 
 ---
-© 2025 MetroGlass Pro Inc
+© 2026 MetroGlass Pro Inc

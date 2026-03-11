@@ -89,11 +89,7 @@ export default function NewExpensePage() {
       return
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(filePath)
-
-    setReceiptUrl(publicUrl)
+    setReceiptUrl(filePath)
     setUploading(false)
   }
 

@@ -94,11 +94,7 @@ export default function NewPaymentPage() {
       return
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(filePath)
-
-    setConfirmationUrl(publicUrl)
+    setConfirmationUrl(filePath)
     setUploading(false)
   }
 

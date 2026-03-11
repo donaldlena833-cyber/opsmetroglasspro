@@ -1,4 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { PageHero } from '@/components/PageHero'
+import { formatCurrency } from '@/lib/utils'
 import { JobsList } from './JobsList'
 
 export const dynamic = 'force-dynamic'
@@ -44,13 +49,54 @@ async function getJobs() {
 
 export default async function JobsPage() {
   const { jobs, totals } = await getJobs()
+  const scheduledInstalls = jobs.filter((job) => job.status !== 'closed' && !!job.install_date).length
+  const closedJobs = jobs.filter((job) => job.status === 'closed').length
 
   return (
     <div className="page-container safe-top">
-      <div className="page-header">
-        <h1 className="page-title">Jobs</h1>
-        <p className="page-subtitle">{jobs.length} total jobs</p>
-      </div>
+      <PageHero
+        eyebrow="Job Tracker"
+        title="Keep the install pipeline moving."
+        description="Monitor active work, catch jobs that need a deposit or glass order, and keep installs organized without bouncing between screens."
+        actions={
+          <>
+            <Link href="/reports">
+              <Button variant="outline">
+                Reports
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/jobs/new">
+              <Button variant="primary">
+                New Job
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </>
+        }
+        stats={[
+          {
+            label: 'Active Jobs',
+            value: totals.activeJobs.toString(),
+            hint: `${closedJobs} closed jobs on file`,
+          },
+          {
+            label: 'Scheduled Installs',
+            value: scheduledInstalls.toString(),
+            hint: 'Active jobs with install dates',
+          },
+          {
+            label: 'Tracked Revenue',
+            value: formatCurrency(totals.totalRevenue),
+            hint: 'Payments recorded across all jobs',
+          },
+          {
+            label: 'Tracked Net',
+            value: formatCurrency(totals.totalNet),
+            hint: 'Revenue minus logged job costs',
+          },
+        ]}
+      />
 
       <JobsList initialJobs={jobs} totals={totals} />
     </div>

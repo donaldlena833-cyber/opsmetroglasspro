@@ -10,6 +10,8 @@ The app already has strong business coverage for jobs, expenses, invoices, remin
 - Shared UI primitives still carry too many hardcoded presentation choices, which makes theme changes expensive.
 - Some high-traffic screens are visually cramped on mobile, especially summary cards and action-heavy views.
 - Large route components mix data fetching, business rules, and rendering, which will slow future feature work.
+- Supabase security linter findings need to be resolved at the schema level instead of being left as dashboard warnings.
+- Receipt previews need to work with a private `receipts` bucket instead of depending on public object URLs.
 
 ## Completed In This Pass
 
@@ -18,6 +20,11 @@ The app already has strong business coverage for jobs, expenses, invoices, remin
 - Restyled shared surfaces, buttons, inputs, badges, dialogs, and sheets for a calmer branded look.
 - Polished the login experience, bottom navigation, quick actions sheet, and dashboard stat cards.
 - Fixed the dashboard stat grid so it does not cram three cards into tiny mobile columns.
+- Added centralized Supabase env validation and dynamic auth layouts so build failures are more predictable.
+- Added branded error boundaries for auth, protected sections, and app-level failures.
+- Reworked Jobs, Invoices, and Settings into a more consistent mobile-first layout with cleaner hierarchy.
+- Switched receipt handling to signed URLs so previews load from a private bucket.
+- Added a database hardening migration for RLS, security-invoker views, and mutable function `search_path`.
 
 ## Phase 1: Stabilize The Foundation
 

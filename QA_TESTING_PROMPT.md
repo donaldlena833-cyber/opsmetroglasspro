@@ -8,7 +8,7 @@ You are evaluating **MetroGlassOps**, a mobile-first Progressive Web App (PWA) b
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Radix UI
 - **Backend**: Supabase (PostgreSQL, Auth, Storage)
 - **PDF Generation**: jsPDF
-- **AI**: Google Gemini Flash API (for receipt extraction - currently not fully integrated)
+- **Storage**: Supabase Storage for receipts, confirmations, and signed previews
 - **Deployment Target**: Vercel with custom domain ops.metroglasspro.com
 
 ## Brand Guidelines
@@ -162,9 +162,8 @@ Test each feature thoroughly and score on a scale of 1-10 (10 = perfect, product
 - [ ] Camera opens automatically on page load
 - [ ] Capture button works
 - [ ] Image uploads successfully
-- [ ] **AI EXTRACTION**: Does Gemini Flash extract receipt data? (amount, vendor, date, category)
-  - [ ] If YES: Fields pre-populate correctly
-  - [ ] If NO: Manual entry still works ⚠️ (Known V1 limitation)
+- [ ] Receipt remains viewable after save
+- [ ] Receipt preview loads from Expenses and Job Detail with a private bucket
 - [ ] Job selection works
 - [ ] Form submission works
 - [ ] "Add another?" prompt appears after save
@@ -397,7 +396,7 @@ Test each feature thoroughly and score on a scale of 1-10 (10 = perfect, product
 ### Confirmed Issues to Address:
 1. **Delete Expense**: No way to delete an expense after creation ⚠️ CRITICAL
 2. **Delete Payment**: No way to delete a payment after creation ⚠️ CRITICAL
-3. **AI Receipt Extraction**: Gemini Flash integration exists but may not be fully functional ⚠️ MEDIUM
+3. **Receipt Storage**: Re-test signed receipt previews after storage policy changes ⚠️ MEDIUM
 4. **Edit Expense**: No edit functionality for expenses
 5. **Edit Payment**: No edit functionality for payments
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { signExpenseReceiptUrls } from '@/lib/storage'
 import { notFound } from 'next/navigation'
 import { JobDetail } from './JobDetail'
 
@@ -24,7 +25,11 @@ async function getJob(id: string) {
     .single()
 
   if (error || !job) return null
-  return job
+
+  return {
+    ...job,
+    expenses: await signExpenseReceiptUrls(supabase, job.expenses || []),
+  }
 }
 
 export default async function JobDetailPage({ params }: Props) {

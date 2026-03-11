@@ -7,21 +7,18 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { 
-  Search, 
-  ChevronRight, 
-  MapPin, 
-  Calendar, 
-  Plus,
+import {
+  AlertCircle,
+  ArrowUpDown,
+  CalendarRange,
+  ChevronRight,
+  MapPin,
+  Search,
   Trash2,
   User,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
 } from 'lucide-react'
-import { formatDateShort, jobStatusConfig, cn, truncate } from '@/lib/utils'
-import { JobWithClient, JobStatus, JobWithValue } from '@/lib/supabase/types'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDateShort, formatRelativeDate, getJobAttentionStatus, jobStatusConfig, cn } from '@/lib/utils'
+import { JobWithClient } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 import {
   Dialog,
@@ -32,6 +29,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { addMonths, isBefore } from 'date-fns'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface JobsListProps {
   initialJobs: (JobWithClient & { total_invoice_value: number; invoice_count: number; total_revenue: number; total_expenses: number })[]
@@ -39,12 +37,19 @@ interface JobsListProps {
 }
 
 type FilterType = 'all' | 'active' | 'closed' | 'archived'
+type SortType = 'recent' | 'install' | 'net'
 
 const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
   { value: 'closed', label: 'Closed' },
   { value: 'archived', label: 'Archived' },
+]
+
+const sortOptions: { value: SortType; label: string }[] = [
+  { value: 'recent', label: 'Recently updated' },
+  { value: 'install', label: 'Install date' },
+  { value: 'net', label: 'Highest net' },
 ]
 
 export function JobsList({ initialJobs, totals }: JobsListProps) {
@@ -55,41 +60,99 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
   const [jobs, setJobs] = useState(initialJobs)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterType>('active')
+  const [sort, setSort] = useState<SortType>('recent')
   const [deleteJob, setDeleteJob] = useState<JobWithClient | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [swipedJobId, setSwipedJobId] = useState<string | null>(null)
 
-  // Filter and search logic
-  const filteredJobs = useMemo(() => {
+  const getArchiveState = (job: { status: string; updated_at: string }) => {
     const threeMonthsAgo = addMonths(new Date(), -3)
+    const isClosed = job.status === 'closed'
+    const isArchived = isClosed && isBefore(new Date(job.updated_at), threeMonthsAgo)
 
-    return jobs.filter((job) => {
-      // Search filter
-      const searchLower = search.toLowerCase()
-      const matchesSearch = search === '' || 
+    return { isClosed, isArchived }
+  }
+
+  const filteredJobs = useMemo(() => {
+    const searchLower = search.trim().toLowerCase()
+
+    return jobs
+      .filter((job) => {
+        const matchesSearch =
+          searchLower === '' ||
         job.job_name.toLowerCase().includes(searchLower) ||
         job.address.toLowerCase().includes(searchLower) ||
         job.clients?.name?.toLowerCase().includes(searchLower)
 
-      if (!matchesSearch) return false
+        if (!matchesSearch) return false
 
-      // Status filter
-      const isClosed = job.status === 'closed'
-      const isArchived = isClosed && isBefore(new Date(job.updated_at), threeMonthsAgo)
+        const { isClosed, isArchived } = getArchiveState(job)
 
-      switch (filter) {
-        case 'active':
-          return !isClosed
-        case 'closed':
-          return isClosed && !isArchived
-        case 'archived':
-          return isArchived
-        case 'all':
-        default:
-          return true
-      }
-    })
-  }, [jobs, search, filter])
+        switch (filter) {
+          case 'active':
+            return !isClosed
+          case 'closed':
+            return isClosed && !isArchived
+          case 'archived':
+            return isArchived
+          case 'all':
+          default:
+            return true
+        }
+      })
+      .sort((left, right) => {
+        if (sort === 'install') {
+          const leftInstall = left.install_date ? new Date(left.install_date).getTime() : Number.MAX_SAFE_INTEGER
+          const rightInstall = right.install_date ? new Date(right.install_date).getTime() : Number.MAX_SAFE_INTEGER
+          return leftInstall - rightInstall
+        }
+
+        if (sort === 'net') {
+          const leftNet = left.total_revenue - left.total_expenses
+          const rightNet = right.total_revenue - right.total_expenses
+          return rightNet - leftNet
+        }
+
+        return new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime()
+      })
+  }, [jobs, search, filter, sort])
+
+  const filterCounts = useMemo(() => {
+    return jobs.reduce(
+      (counts, job) => {
+        const { isClosed, isArchived } = getArchiveState(job)
+        counts.all += 1
+
+        if (isArchived) {
+          counts.archived += 1
+        } else if (isClosed) {
+          counts.closed += 1
+        } else {
+          counts.active += 1
+        }
+
+        return counts
+      },
+      { all: 0, active: 0, closed: 0, archived: 0 } satisfies Record<FilterType, number>
+    )
+  }, [jobs])
+
+  const visibleSummary = useMemo(() => {
+    return filteredJobs.reduce(
+      (summary, job) => {
+        if (job.install_date) {
+          summary.scheduled += 1
+        }
+
+        if (getJobAttentionStatus(job).needsAttention) {
+          summary.attention += 1
+        }
+
+        summary.net += job.total_revenue - job.total_expenses
+        return summary
+      },
+      { scheduled: 0, attention: 0, net: 0 }
+    )
+  }, [filteredJobs])
 
   const handleDelete = async () => {
     if (!deleteJob) return
@@ -110,7 +173,7 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
       return
     }
 
-    setJobs(jobs.filter(j => j.id !== deleteJob.id))
+    setJobs((current) => current.filter((job) => job.id !== deleteJob.id))
     toast({
       title: 'Deleted',
       description: 'Job has been deleted',
@@ -122,53 +185,89 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
 
   return (
     <>
-      {/* V3: Search and Filter - more rounded */}
-      <div className="mb-6 space-y-4">
-        <Input
-          placeholder="Search jobs, clients, addresses..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          icon={<Search className="w-5 h-5" />}
-        />
-        
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {filterOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setFilter(option.value)}
-              className={cn(
-                'px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all',
-                filter === option.value
-                  ? 'bg-orange-500 text-white shadow-soft'
-                  : 'bg-white dark:bg-dark-card text-gray-600 dark:text-dark-muted border-2 border-cream-200 dark:border-dark-border'
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
+      <Card className="mb-6 overflow-hidden">
+        <div className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 flex-1">
+                <Input
+                  placeholder="Search jobs, clients, addresses..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  icon={<Search className="h-5 w-5" />}
+                />
+              </div>
+
+              <div className="w-full lg:w-[230px]">
+                <Select value={sort} onValueChange={(value) => setSort(value as SortType)}>
+                  <SelectTrigger>
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-navy-400 dark:text-dark-muted" />
+                      <SelectValue placeholder="Sort jobs" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {filterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFilter(option.value)}
+                  className={cn(
+                    'rounded-full border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors',
+                    filter === option.value
+                      ? 'border-navy-800 bg-navy-800 text-white dark:border-orange-400 dark:bg-orange-500'
+                      : 'border-cream-300 bg-white text-navy-500 hover:bg-cream-100 dark:border-dark-border dark:bg-dark-card dark:text-dark-muted dark:hover:bg-dark-border'
+                  )}
+                >
+                  {option.label} ({filterCounts[option.value]})
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/70">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
+                  In View
+                </p>
+                <p className="mt-2 text-lg font-semibold text-navy-800 dark:text-dark-text">{filteredJobs.length}</p>
+              </div>
+              <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/70">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
+                  Scheduled
+                </p>
+                <p className="mt-2 text-lg font-semibold text-navy-800 dark:text-dark-text">{visibleSummary.scheduled}</p>
+              </div>
+              <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/70">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
+                  Attention
+                </p>
+                <p className="mt-2 text-lg font-semibold text-navy-800 dark:text-dark-text">{visibleSummary.attention}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-navy-500 dark:text-dark-muted">
+              <span>
+                {formatCurrency(visibleSummary.net)} net across the current view
+              </span>
+              <span>
+                {formatCurrency(totals.totalExpenses)} tracked costs overall
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Jobs Totals Summary */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <Card className="p-3 text-center">
-          <p className="text-[10px] font-semibold text-gray-500 dark:text-dark-muted uppercase">Revenue</p>
-          <p className="text-base font-bold text-green-600 dark:text-green-400 mt-0.5">{formatCurrency(totals.totalRevenue)}</p>
-        </Card>
-        <Card className="p-3 text-center">
-          <p className="text-[10px] font-semibold text-gray-500 dark:text-dark-muted uppercase">Costs</p>
-          <p className="text-base font-bold text-red-600 dark:text-red-400 mt-0.5">{formatCurrency(totals.totalExpenses)}</p>
-        </Card>
-        <Card className="p-3 text-center">
-          <p className="text-[10px] font-semibold text-gray-500 dark:text-dark-muted uppercase">Net</p>
-          <p className={cn(
-            'text-base font-bold mt-0.5',
-            totals.totalNet >= 0 ? 'text-navy-800 dark:text-dark-text' : 'text-red-600 dark:text-red-400'
-          )}>{formatCurrency(totals.totalNet)}</p>
-        </Card>
-      </div>
-
-      {/* Jobs List */}
       {filteredJobs.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">
@@ -184,8 +283,7 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
               className="mt-4"
               variant="primary"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              New Job
+              Create Job
             </Button>
           )}
         </div>
@@ -193,120 +291,129 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
         <div className="space-y-4 stagger-list">
           {filteredJobs.map((job) => {
             const statusConfig = jobStatusConfig[job.status]
+            const attention = getJobAttentionStatus(job)
+            const net = job.total_revenue - job.total_expenses
 
             return (
-              <div
+              <Card
                 key={job.id}
-                className="relative overflow-hidden rounded-xl"
+                onClick={() => router.push(`/jobs/${job.id}`)}
+                className="cursor-pointer overflow-hidden transition-transform hover:-translate-y-0.5 active:scale-[0.99]"
               >
-                {/* Delete button (shown on swipe/long press) */}
-                <div 
-                  className={cn(
-                    'absolute inset-y-0 right-0 flex items-center justify-end bg-red-500 transition-all',
-                    swipedJobId === job.id ? 'w-20' : 'w-0'
-                  )}
-                >
-                  <button
-                    onClick={() => setDeleteJob(job)}
-                    className="w-full h-full flex items-center justify-center text-white"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Job Card */}
-                <Card
-                  onClick={() => router.push(`/jobs/${job.id}`)}
-                  onContextMenu={(e) => {
-                    e.preventDefault()
-                    setSwipedJobId(swipedJobId === job.id ? null : job.id)
-                  }}
-                  className={cn(
-                    'p-4 cursor-pointer active:scale-[0.99] transition-all',
-                    swipedJobId === job.id && '-translate-x-20'
-                  )}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-navy-800 truncate">
-                          {job.job_name}
-                        </h3>
-                        <Badge variant={job.status as any} className="flex-shrink-0">
-                          {statusConfig.label}
-                        </Badge>
-                      </div>
-
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="truncate">{truncate(job.address, 40)}</span>
-                        </div>
-
-                        {job.clients && (
-                          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                            <User className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate">{job.clients.name}</span>
+                <div className="p-4 sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-semibold text-navy-800 dark:text-dark-text">
+                              {job.job_name}
+                            </h3>
+                            <Badge variant={job.status as any}>{statusConfig.label}</Badge>
                           </div>
-                        )}
 
-                        {job.install_date && (
-                          <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-muted">
-                            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>Install: {formatDateShort(job.install_date)}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Job Financial Summary */}
-                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-dark-border flex items-center gap-3">
-                        {job.total_revenue > 0 || job.total_expenses > 0 ? (
-                          <>
-                            <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                              +{formatCurrency(job.total_revenue)}
-                            </span>
-                            {job.total_expenses > 0 && (
-                              <span className="text-xs font-medium text-red-500 dark:text-red-400">
-                                -{formatCurrency(job.total_expenses)}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {job.clients && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-cream-200 bg-cream-50 px-3 py-1 text-xs font-medium text-navy-600 dark:border-dark-border dark:bg-dark-border dark:text-dark-text">
+                                <User className="h-3.5 w-3.5" />
+                                {job.clients.name}
                               </span>
                             )}
-                            <span className={cn(
-                              'text-xs font-bold ml-auto',
-                              (job.total_revenue - job.total_expenses) >= 0 ? 'text-navy-800 dark:text-dark-text' : 'text-red-600'
-                            )}>
-                              Net: {formatCurrency(job.total_revenue - job.total_expenses)}
+                            <span className="inline-flex items-center gap-1 rounded-full border border-cream-200 bg-white px-3 py-1 text-xs font-medium text-navy-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-muted">
+                              {job.invoice_count} invoice{job.invoice_count === 1 ? '' : 's'}
                             </span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-400 dark:text-dark-muted">
-                            {job.total_invoice_value > 0 
-                              ? `Invoiced: ${formatCurrency(job.total_invoice_value)}`
-                              : 'No financials yet'
-                            }
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setDeleteJob(job)
+                            }}
+                            className="rounded-2xl border border-red-200 bg-red-50 p-2 text-red-600 transition-colors hover:bg-red-100 dark:border-red-900/40 dark:bg-red-900/15 dark:text-red-300 dark:hover:bg-red-900/25"
+                            aria-label={`Delete ${job.job_name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <ChevronRight className="h-5 w-5 text-navy-300 dark:text-dark-muted" />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-navy-500 dark:text-dark-muted">
+                          <MapPin className="h-4 w-4 shrink-0" />
+                          <span className="line-clamp-1">{job.address}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-navy-500 dark:text-dark-muted">
+                          <CalendarRange className="h-4 w-4 shrink-0" />
+                          <span>
+                            {job.install_date
+                              ? `Install ${formatDateShort(job.install_date)}`
+                              : 'Install date not scheduled yet'}
                           </span>
-                        )}
+                        </div>
+                      </div>
+
+                      {attention.needsAttention && (
+                        <div className="mt-4 rounded-[24px] border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300">
+                          <div className="flex items-center gap-2 font-medium">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            {attention.message}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        <div className="rounded-[22px] border border-cream-200 bg-cream-50/80 p-3 dark:border-dark-border dark:bg-dark-border/70">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">
+                            Revenue
+                          </p>
+                          <p className="mt-1 font-semibold text-green-600 dark:text-green-400">
+                            {formatCurrency(job.total_revenue)}
+                          </p>
+                        </div>
+                        <div className="rounded-[22px] border border-cream-200 bg-cream-50/80 p-3 dark:border-dark-border dark:bg-dark-border/70">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">
+                            Costs
+                          </p>
+                          <p className="mt-1 font-semibold text-red-600 dark:text-red-400">
+                            {formatCurrency(job.total_expenses)}
+                          </p>
+                        </div>
+                        <div className="rounded-[22px] border border-cream-200 bg-cream-50/80 p-3 dark:border-dark-border dark:bg-dark-border/70">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">
+                            Net
+                          </p>
+                          <p
+                            className={cn(
+                              'mt-1 font-semibold',
+                              net >= 0 ? 'text-navy-800 dark:text-dark-text' : 'text-red-600 dark:text-red-400'
+                            )}
+                          >
+                            {formatCurrency(net)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-navy-400 dark:text-dark-muted">
+                        <span>Updated {formatRelativeDate(job.updated_at)}</span>
+                        <span>
+                          {job.total_invoice_value > 0
+                            ? `${formatCurrency(job.total_invoice_value)} invoiced`
+                            : 'No invoices yet'}
+                        </span>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
                   </div>
-                </Card>
-              </div>
+                </div>
+              </Card>
             )
           })}
         </div>
       )}
 
-      {/* New Job FAB */}
-      <Button
-        onClick={() => router.push('/jobs/new')}
-        variant="primary"
-        size="icon-lg"
-        className="fixed right-4 bottom-24 shadow-lg"
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
-
-      {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteJob} onOpenChange={() => setDeleteJob(null)}>
         <DialogContent>
           <DialogHeader>
