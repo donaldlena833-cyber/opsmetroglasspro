@@ -22,9 +22,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ArrowLeft, Camera, Loader2, Sparkles, Search, Upload } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, Search, Upload, X, CheckCircle } from 'lucide-react'
 import { expenseCategoryConfig, paymentMethodConfig } from '@/lib/utils'
-import { ExpenseCategory, PaymentMethod, Job } from '@/lib/supabase/types'
+import { ExpenseCategory, PaymentMethod } from '@/lib/supabase/types'
 
 export default function QuickExpensePage() {
   const router = useRouter()
@@ -34,7 +34,6 @@ export default function QuickExpensePage() {
 
   const [step, setStep] = useState<'camera' | 'form'>('camera')
   const [loading, setLoading] = useState(false)
-  const [analyzing, setAnalyzing] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showAddAnother, setShowAddAnother] = useState(false)
   const [jobs, setJobs] = useState<any[]>([])
@@ -62,7 +61,6 @@ export default function QuickExpensePage() {
     }
     fetchJobs()
 
-    // Auto-open camera on mount
     if (step === 'camera') {
       setTimeout(() => fileInputRef.current?.click(), 100)
     }
@@ -72,42 +70,6 @@ export default function QuickExpensePage() {
     j.job_name.toLowerCase().includes(jobSearch.toLowerCase()) ||
     j.address.toLowerCase().includes(jobSearch.toLowerCase())
   )
-
-  const selectedJob = jobs.find(j => j.id === jobId)
-
-  const analyzeReceipt = async (imageUrl: string) => {
-    setAnalyzing(true)
-    try {
-      const response = await fetch('/api/ai/extract-receipt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl }),
-      })
-
-      if (!response.ok) throw new Error('Failed to analyze receipt')
-
-      const data = await response.json()
-
-      if (data.amount) setAmount(data.amount.toString())
-      if (data.vendor) setVendor(data.vendor)
-      if (data.category) setCategory(data.category as ExpenseCategory)
-      if (data.date) setDate(data.date)
-
-      toast({
-        title: 'Receipt analyzed!',
-        description: 'Please verify the extracted information',
-        variant: 'success',
-      })
-    } catch (error) {
-      toast({
-        title: 'Analysis failed',
-        description: 'Please enter details manually',
-        variant: 'warning',
-      })
-    } finally {
-      setAnalyzing(false)
-    }
-  }
 
   const handleImageCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -140,9 +102,6 @@ export default function QuickExpensePage() {
 
     setReceiptUrl(publicUrl)
     setUploading(false)
-
-    // Analyze with AI
-    analyzeReceipt(publicUrl)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -173,6 +132,18 @@ export default function QuickExpensePage() {
     toast({ title: 'Expense saved!', variant: 'success' })
     setLoading(false)
     setShowAddAnother(true)
+  }
+
+  const resetForm = () => {
+    setImagePreview(null)
+    setReceiptUrl(null)
+    setAmount('')
+    setVendor('')
+    setCategory('other')
+    setJobId(null)
+    setJobSearch('')
+    setStep('camera')
+    setTimeout(() => fileInputRef.current?.click(), 100)
   }
 
   return (
@@ -206,8 +177,7 @@ export default function QuickExpensePage() {
       />
 
       {step === 'camera' && (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
-          {/* Take Photo Button */}
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6 animate-fade-in">
           <button
             onClick={() => fileInputRef.current?.click()}
             className="w-32 h-32 rounded-3xl bg-orange-500 text-white flex flex-col items-center justify-center shadow-float active:scale-95 transition-transform"
@@ -216,7 +186,6 @@ export default function QuickExpensePage() {
             <span className="text-xs font-medium">Take Photo</span>
           </button>
           
-          {/* Or choose from library */}
           <div className="text-center">
             <p className="text-gray-400 dark:text-dark-muted text-sm mb-3">or</p>
             <label htmlFor="library-input" className="cursor-pointer">
@@ -233,29 +202,36 @@ export default function QuickExpensePage() {
       )}
 
       {step === 'form' && (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Receipt Preview */}
+        <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
           {imagePreview && (
-            <div className="relative rounded-xl overflow-hidden">
+            <div className="relative rounded-2xl overflow-hidden">
               <img src={imagePreview} alt="Receipt" className="w-full h-48 object-cover" />
-              {(uploading || analyzing) && (
+              {uploading && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <div className="text-center text-white">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                    <p className="text-sm">{uploading ? 'Uploading...' : 'Analyzing with AI...'}</p>
+                    <p className="text-sm">Uploading...</p>
                   </div>
                 </div>
               )}
-              {!uploading && !analyzing && (
-                <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  AI Extracted
+              {!uploading && (
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Uploaded
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setImagePreview(null); setReceiptUrl(null) }}
+                    className="w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* Job Selection */}
           <Card>
             <CardContent>
               <p className="text-sm font-medium text-navy-800 mb-2">Attach to Job</p>
@@ -289,11 +265,7 @@ export default function QuickExpensePage() {
                     ))}
                     <button
                       type="button"
-                      onClick={() => {
-                        setJobId(null)
-                        setJobSearch('')
-                        setShowJobDropdown(false)
-                      }}
+                      onClick={() => { setJobId(null); setJobSearch(''); setShowJobDropdown(false) }}
                       className="w-full px-4 py-3 text-left hover:bg-cream-50 border-t text-gray-500 text-sm"
                     >
                       General Expense
@@ -304,60 +276,27 @@ export default function QuickExpensePage() {
             </CardContent>
           </Card>
 
-          {/* Details */}
           <Card>
             <CardContent className="space-y-4">
-              <Input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                label="Amount *"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
-
-              <Input
-                label="Vendor *"
-                placeholder="Mr Glass, U-Haul..."
-                value={vendor}
-                onChange={(e) => setVendor(e.target.value)}
-                required
-              />
-
+              <Input type="number" inputMode="decimal" step="0.01" label="Amount *" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+              <Input label="Vendor *" placeholder="Mr Glass, U-Haul..." value={vendor} onChange={(e) => setVendor(e.target.value)} required />
               <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
-                <SelectTrigger label="Category">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger label="Category"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(expenseCategoryConfig).map(([value, config]) => (
-                    <SelectItem key={value} value={value}>
-                      {config.icon} {config.label}
-                    </SelectItem>
+                    <SelectItem key={value} value={value}>{config.icon} {config.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-
               <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-                <SelectTrigger label="Paid with">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger label="Paid with"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(paymentMethodConfig).map(([value, config]) => (
-                    <SelectItem key={value} value={value}>
-                      {config.label}
-                    </SelectItem>
+                    <SelectItem key={value} value={value}>{config.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-
-              <Input
-                type="date"
-                label="Date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+              <Input type="date" label="Date" value={date} onChange={(e) => setDate(e.target.value)} />
             </CardContent>
           </Card>
 
@@ -367,43 +306,15 @@ export default function QuickExpensePage() {
         </form>
       )}
 
-      {/* Add Another Dialog */}
       <Dialog open={showAddAnother} onOpenChange={setShowAddAnother}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Expense Saved!</DialogTitle>
-            <DialogDescription>
-              Would you like to add another expense?
-            </DialogDescription>
+            <DialogDescription>Would you like to add another expense?</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAddAnother(false)
-                router.push('/today')
-                router.refresh()
-              }}
-            >
-              Done
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                setShowAddAnother(false)
-                setImagePreview(null)
-                setReceiptUrl(null)
-                setAmount('')
-                setVendor('')
-                setCategory('other')
-                setJobId(null)
-                setJobSearch('')
-                setStep('camera')
-                setTimeout(() => fileInputRef.current?.click(), 100)
-              }}
-            >
-              Add Another
-            </Button>
+            <Button variant="outline" onClick={() => { setShowAddAnother(false); router.push('/today'); router.refresh() }}>Done</Button>
+            <Button variant="primary" onClick={() => { setShowAddAnother(false); resetForm() }}>Add Another</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

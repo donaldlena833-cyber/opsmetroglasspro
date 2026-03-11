@@ -213,4 +213,20 @@
   .glass {
     @apply bg-white/70 dark:bg-dark-card/70 backdrop-blur-lg;
   }
+
+  /* Staggered list animation */
+  .stagger-list > * {
+    animation: staggerFadeIn 0.35s ease-out both;
+  }
+  .stagger-list > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-list > *:nth-child(2) { animation-delay: 40ms; }
+  .stagger-list > *:nth-child(3) { animation-delay: 80ms; }
+  .stagger-list > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger-list > *:nth-child(5) { animation-delay: 160ms; }
+  .stagger-list > *:nth-child(6) { animation-delay: 200ms; }
+  .stagger-list > *:nth-child(7) { animation-delay: 240ms; }
+  .stagger-list > *:nth-child(8) { animation-delay: 280ms; }
+  .stagger-list > *:nth-child(9) { animation-delay: 320ms; }
+  .stagger-list > *:nth-child(10) { animation-delay: 360ms; }
+  .stagger-list > *:nth-child(n+11) { animation-delay: 400ms; }
 }

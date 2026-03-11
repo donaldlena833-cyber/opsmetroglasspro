@@ -148,7 +148,7 @@ export default async function TodayPage() {
   return (
     <div className="page-container safe-top">
       {/* V3: Header with greeting - like reference design */}
-      <div className="mb-8">
+      <div className="mb-8 animate-fade-in">
         <p className="text-sm text-gray-500 dark:text-dark-muted mb-1">
           {format(now, 'EEEE, MMMM d')}
         </p>

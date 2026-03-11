@@ -14,7 +14,10 @@ import {
   Calendar, 
   Plus,
   Trash2,
-  User
+  User,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react'
 import { formatDateShort, jobStatusConfig, cn, truncate } from '@/lib/utils'
 import { JobWithClient, JobStatus, JobWithValue } from '@/lib/supabase/types'
@@ -31,7 +34,8 @@ import {
 import { addMonths, isBefore } from 'date-fns'
 
 interface JobsListProps {
-  initialJobs: (JobWithClient & { total_invoice_value: number; invoice_count: number })[]
+  initialJobs: (JobWithClient & { total_invoice_value: number; invoice_count: number; total_revenue: number; total_expenses: number })[]
+  totals: { totalRevenue: number; totalExpenses: number; totalNet: number; activeJobs: number }
 }
 
 type FilterType = 'all' | 'active' | 'closed' | 'archived'
@@ -43,7 +47,7 @@ const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'archived', label: 'Archived' },
 ]
 
-export function JobsList({ initialJobs }: JobsListProps) {
+export function JobsList({ initialJobs, totals }: JobsListProps) {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
@@ -145,6 +149,25 @@ export function JobsList({ initialJobs }: JobsListProps) {
         </div>
       </div>
 
+      {/* Jobs Totals Summary */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <Card className="p-3 text-center">
+          <p className="text-[10px] font-semibold text-gray-500 dark:text-dark-muted uppercase">Revenue</p>
+          <p className="text-base font-bold text-green-600 dark:text-green-400 mt-0.5">{formatCurrency(totals.totalRevenue)}</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-[10px] font-semibold text-gray-500 dark:text-dark-muted uppercase">Costs</p>
+          <p className="text-base font-bold text-red-600 dark:text-red-400 mt-0.5">{formatCurrency(totals.totalExpenses)}</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-[10px] font-semibold text-gray-500 dark:text-dark-muted uppercase">Net</p>
+          <p className={cn(
+            'text-base font-bold mt-0.5',
+            totals.totalNet >= 0 ? 'text-navy-800 dark:text-dark-text' : 'text-red-600 dark:text-red-400'
+          )}>{formatCurrency(totals.totalNet)}</p>
+        </Card>
+      </div>
+
       {/* Jobs List */}
       {filteredJobs.length === 0 ? (
         <div className="empty-state">
@@ -167,7 +190,7 @@ export function JobsList({ initialJobs }: JobsListProps) {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-list">
           {filteredJobs.map((job) => {
             const statusConfig = jobStatusConfig[job.status]
 
@@ -235,20 +258,31 @@ export function JobsList({ initialJobs }: JobsListProps) {
                         )}
                       </div>
 
-                      {/* V2: Job Value */}
-                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-dark-border">
-                        <span className={cn(
-                          'text-sm font-medium',
-                          job.total_invoice_value > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-dark-muted'
-                        )}>
-                          {job.total_invoice_value > 0 
-                            ? formatCurrency(job.total_invoice_value)
-                            : 'No invoice'
-                          }
-                        </span>
-                        {job.invoice_count > 1 && (
-                          <span className="text-xs text-gray-400 dark:text-dark-muted ml-1">
-                            ({job.invoice_count} invoices)
+                      {/* Job Financial Summary */}
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-dark-border flex items-center gap-3">
+                        {job.total_revenue > 0 || job.total_expenses > 0 ? (
+                          <>
+                            <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                              +{formatCurrency(job.total_revenue)}
+                            </span>
+                            {job.total_expenses > 0 && (
+                              <span className="text-xs font-medium text-red-500 dark:text-red-400">
+                                -{formatCurrency(job.total_expenses)}
+                              </span>
+                            )}
+                            <span className={cn(
+                              'text-xs font-bold ml-auto',
+                              (job.total_revenue - job.total_expenses) >= 0 ? 'text-navy-800 dark:text-dark-text' : 'text-red-600'
+                            )}>
+                              Net: {formatCurrency(job.total_revenue - job.total_expenses)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400 dark:text-dark-muted">
+                            {job.total_invoice_value > 0 
+                              ? `Invoiced: ${formatCurrency(job.total_invoice_value)}`
+                              : 'No financials yet'
+                            }
                           </span>
                         )}
                       </div>
