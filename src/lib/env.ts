@@ -1,10 +1,18 @@
 const missingEnvHelp = 'Add it to `.env.local` for local development and your deployment environment before starting the app.'
 
+const envValues = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+} as const
+
 function getFirstAvailableEnv(name: string, fallbacks: string[] = []) {
   const candidates = [name, ...fallbacks]
 
   for (const candidate of candidates) {
-    const value = process.env[candidate]
+    const value = envValues[candidate as keyof typeof envValues]
     if (value) {
       return value
     }
