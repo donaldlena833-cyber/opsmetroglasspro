@@ -29,7 +29,7 @@ import { ExpenseCategory, PaymentMethod } from '@/lib/supabase/types'
 export default function QuickExpensePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<'camera' | 'form'>('camera')
@@ -60,11 +60,13 @@ export default function QuickExpensePage() {
       if (data) setJobs(data)
     }
     fetchJobs()
+  }, [supabase])
 
+  useEffect(() => {
     if (step === 'camera') {
       setTimeout(() => fileInputRef.current?.click(), 100)
     }
-  }, [])
+  }, [step])
 
   const filteredJobs = jobs.filter(j =>
     j.job_name.toLowerCase().includes(jobSearch.toLowerCase()) ||

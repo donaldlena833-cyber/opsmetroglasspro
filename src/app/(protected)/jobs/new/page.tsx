@@ -28,7 +28,7 @@ import { Client, JobStatus, GlassType, GlassThickness, HardwareFinish } from '@/
 export default function NewJobPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
@@ -68,7 +68,7 @@ export default function NewJobPage() {
       if (data) setClients(data)
     }
     fetchClients()
-  }, [])
+  }, [supabase])
 
   const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
@@ -344,7 +344,7 @@ export default function NewJobPage() {
                     className="w-full px-4 py-3 text-left hover:bg-cream-50 dark:hover:bg-dark-border border-t border-gray-100 dark:border-dark-border flex items-center gap-2 text-orange-600 dark:text-orange-400"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Create "{clientSearch}"</span>
+                    <span>Create &quot;{clientSearch}&quot;</span>
                   </button>
                 </div>
               )}

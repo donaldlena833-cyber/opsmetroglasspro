@@ -419,7 +419,7 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
           <DialogHeader>
             <DialogTitle>Delete Job?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteJob?.job_name}"? This will also delete all associated expenses, payments, and invoices. This action cannot be undone.
+              Are you sure you want to delete {deleteJob?.job_name}? This will also delete all associated expenses, payments, and invoices. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

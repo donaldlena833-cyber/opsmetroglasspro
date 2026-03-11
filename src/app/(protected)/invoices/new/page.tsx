@@ -26,7 +26,7 @@ export default function NewInvoicePage() {
   const searchParams = useSearchParams()
   const preselectedJobId = searchParams.get('jobId')
   const { toast } = useToast()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   const [loading, setLoading] = useState(false)
   const [jobs, setJobs] = useState<(Job & { clients: Client | null })[]>([])
@@ -68,7 +68,7 @@ export default function NewInvoicePage() {
       }
     }
     fetchJobs()
-  }, [preselectedJobId])
+  }, [preselectedJobId, supabase])
 
   const filteredJobs = jobs.filter(j =>
     j.job_name.toLowerCase().includes(jobSearch.toLowerCase()) ||

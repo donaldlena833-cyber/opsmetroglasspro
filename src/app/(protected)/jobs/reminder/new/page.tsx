@@ -29,7 +29,7 @@ export default function NewReminderPage() {
   const searchParams = useSearchParams()
   const preselectedJobId = searchParams.get('jobId')
   const { toast } = useToast()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   const [loading, setLoading] = useState(false)
   const [jobs, setJobs] = useState<any[]>([])
@@ -57,7 +57,7 @@ export default function NewReminderPage() {
       }
     }
     fetchJobs()
-  }, [preselectedJobId])
+  }, [preselectedJobId, supabase])
 
   const filteredJobs = jobs.filter(j =>
     j.job_name.toLowerCase().includes(jobSearch.toLowerCase()) ||
