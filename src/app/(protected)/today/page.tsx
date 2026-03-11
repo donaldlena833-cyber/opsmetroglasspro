@@ -1,11 +1,14 @@
+import Link from 'next/link'
+import { addDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
+import { ArrowUpRight, BriefcaseBusiness, FileText, Receipt, Sparkles, BarChart3 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { format, startOfMonth, endOfMonth, addDays, subMonths } from 'date-fns'
+import { Card } from '@/components/ui/card'
 import { ReminderBanners } from './ReminderBanners'
 import { JobsAttention } from './JobsAttention'
 import { UpcomingInstalls } from './UpcomingInstalls'
 import { MonthlyStats } from './MonthlyStats'
 import { SpendingBreakdown } from './SpendingBreakdown'
-import { getGreeting, getMotivationalMessage } from '@/lib/utils'
+import { formatCurrency, getGreeting, getMotivationalMessage } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,12 +19,9 @@ async function getDashboardData() {
   const monthEnd = endOfMonth(now)
   const weekFromNow = addDays(now, 7)
   const threeDaysFromNow = addDays(now, 3)
-  
-  // V2: Get last month's data for comparison
   const lastMonthStart = startOfMonth(subMonths(now, 1))
   const lastMonthEnd = endOfMonth(subMonths(now, 1))
 
-  // Get reminders (due today + next 3 days, not done)
   const { data: reminders } = await supabase
     .from('reminders')
     .select(`
@@ -32,7 +32,6 @@ async function getDashboardData() {
     .lte('reminder_date', format(threeDaysFromNow, 'yyyy-MM-dd'))
     .order('reminder_date', { ascending: true })
 
-  // Get jobs for attention check (not closed)
   const { data: jobsForAttention } = await supabase
     .from('jobs')
     .select(`
@@ -44,7 +43,6 @@ async function getDashboardData() {
     .neq('status', 'closed')
     .order('created_at', { ascending: false })
 
-  // Get upcoming installs (next 7 days)
   const { data: upcomingInstalls } = await supabase
     .from('jobs')
     .select(`
@@ -61,28 +59,24 @@ async function getDashboardData() {
     .lte('install_date', format(weekFromNow, 'yyyy-MM-dd'))
     .order('install_date', { ascending: true })
 
-  // Get month-to-date payments (revenue)
   const { data: payments } = await supabase
     .from('payments')
     .select('amount')
     .gte('date', format(monthStart, 'yyyy-MM-dd'))
     .lte('date', format(monthEnd, 'yyyy-MM-dd'))
 
-  // Get month-to-date expenses
   const { data: expenses } = await supabase
     .from('expenses')
     .select('amount, category')
     .gte('date', format(monthStart, 'yyyy-MM-dd'))
     .lte('date', format(monthEnd, 'yyyy-MM-dd'))
-    
-  // V2: Get last month's revenue for comparison
+
   const { data: lastMonthPayments } = await supabase
     .from('payments')
     .select('amount')
     .gte('date', format(lastMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(lastMonthEnd, 'yyyy-MM-dd'))
 
-  // Get user info for greeting
   const { data: { user } } = await supabase.auth.getUser()
 
   return {
@@ -96,103 +90,207 @@ async function getDashboardData() {
   }
 }
 
+const quickLinks = [
+  {
+    href: '/jobs',
+    label: 'Jobs',
+    description: 'Open active work, clients, and schedules.',
+    icon: BriefcaseBusiness,
+    tone: 'from-navy-100 to-white dark:from-navy-900/30 dark:to-dark-card',
+  },
+  {
+    href: '/expenses',
+    label: 'Expenses',
+    description: 'See every expense and every receipt image.',
+    icon: Receipt,
+    tone: 'from-orange-50 to-white dark:from-orange-900/20 dark:to-dark-card',
+  },
+  {
+    href: '/invoices/new',
+    label: 'New Invoice',
+    description: 'Create and send a fresh invoice quickly.',
+    icon: FileText,
+    tone: 'from-cream-100 to-white dark:from-dark-border dark:to-dark-card',
+  },
+  {
+    href: '/reports',
+    label: 'Reports',
+    description: 'Review monthly performance and trends.',
+    icon: BarChart3,
+    tone: 'from-green-50 to-white dark:from-green-900/20 dark:to-dark-card',
+  },
+]
+
 export default async function TodayPage() {
   const data = await getDashboardData()
   const now = new Date()
 
-  // Calculate monthly totals
-  const monthlyRevenue = data.payments.reduce((sum, p) => sum + Number(p.amount), 0)
-  const monthlyExpenses = data.expenses.reduce((sum, e) => sum + Number(e.amount), 0)
+  const monthlyRevenue = data.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const monthlyExpenses = data.expenses.reduce((sum, expense) => sum + Number(expense.amount), 0)
   const monthlyNet = monthlyRevenue - monthlyExpenses
-  
-  // V2: Calculate last month revenue for comparison
-  const lastMonthRevenue = data.lastMonthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
+  const lastMonthRevenue = data.lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
   const motivationalMessage = getMotivationalMessage(monthlyRevenue, lastMonthRevenue)
 
-  // Group expenses by category for spending breakdown
-  const expensesByCategory = data.expenses.reduce((acc, e) => {
-    const category = e.category
-    acc[category] = (acc[category] || 0) + Number(e.amount)
-    return acc
+  const expensesByCategory = data.expenses.reduce((accumulator, expense) => {
+    accumulator[expense.category] = (accumulator[expense.category] || 0) + Number(expense.amount)
+    return accumulator
   }, {} as Record<string, number>)
 
-  // Filter jobs needing attention
-  const jobsNeedingAttention = data.jobsForAttention.filter(job => {
-    const hasDeposit = job.payments?.some((p: any) => p.payment_type === 'deposit')
-    const hasGlassExpense = job.expenses?.some((e: any) => 
-      e.category === 'glass_fabrication' || e.category === 'mr_glass' || e.category === 'glass'
-    )
-    const hasFinalPayment = job.payments?.some((p: any) => p.payment_type === 'final')
+  const jobsNeedingAttention = data.jobsForAttention
+    .filter((job) => {
+      const hasDeposit = job.payments?.some((payment: any) => payment.payment_type === 'deposit')
+      const hasGlassExpense = job.expenses?.some(
+        (expense: any) =>
+          expense.category === 'glass_fabrication' || expense.category === 'mr_glass' || expense.category === 'glass'
+      )
+      const hasFinalPayment = job.payments?.some((payment: any) => payment.payment_type === 'final')
 
-    // Status is deposit_received or later but no deposit payment
-    if (['deposit_received', 'measured', 'ordered', 'installed'].includes(job.status) && !hasDeposit) {
-      return true
-    }
-    // Status is measured/ordered but no glass expense
-    if (['measured', 'ordered'].includes(job.status) && !hasGlassExpense) {
-      return true
-    }
-    // Status is installed but no final payment
-    if (job.status === 'installed' && !hasFinalPayment) {
-      return true
-    }
-    return false
-  }).slice(0, 5) // Show max 5
+      if (['deposit_received', 'measured', 'ordered', 'installed'].includes(job.status) && !hasDeposit) {
+        return true
+      }
+      if (['measured', 'ordered'].includes(job.status) && !hasGlassExpense) {
+        return true
+      }
+      if (job.status === 'installed' && !hasFinalPayment) {
+        return true
+      }
+      return false
+    })
+    .slice(0, 5)
 
-  // Get greeting based on time
   const greeting = getGreeting()
-
-  // Format name nicely
   const displayName = data.userName.charAt(0).toUpperCase() + data.userName.slice(1)
+  const activeJobCount = data.jobsForAttention.length
 
   return (
     <div className="page-container safe-top">
-      {/* V3: Header with greeting - like reference design */}
-      <div className="mb-8 animate-fade-in">
-        <p className="text-sm text-gray-500 dark:text-dark-muted mb-1">
-          {format(now, 'EEEE, MMMM d')}
-        </p>
-        <h1 className="text-2xl font-bold text-navy-700 dark:text-dark-text">
-          Hi, {displayName} 👋
-        </h1>
-        <p className="text-gray-500 dark:text-dark-muted mt-1">
-          How's business today?
-        </p>
-      </div>
+      <section className="relative mb-6 overflow-hidden rounded-[34px] border border-cream-200/90 bg-white/88 p-6 shadow-card-lg backdrop-blur-sm dark:border-dark-border dark:bg-dark-card/90 dark:shadow-card-dark">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(184,138,82,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,51,45,0.08),transparent_32%)]" />
 
-      {/* V3: Motivational banner card */}
-      {motivationalMessage && (
-        <div className="accent-card mb-6">
-          <p className="text-orange-700 dark:text-orange-300 font-semibold">{motivationalMessage}</p>
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-700 dark:text-orange-300">
+                {format(now, 'EEEE, MMMM d')}
+              </p>
+              <h1 className="mt-4 text-[2rem] font-semibold tracking-[-0.03em] text-navy-900 dark:text-dark-text sm:text-[2.5rem]">
+                {greeting}, {displayName}.
+              </h1>
+              <p className="mt-3 text-sm leading-7 text-navy-500 dark:text-dark-muted sm:text-base">
+                See what needs attention, what is getting installed, and how money is moving without digging through the app.
+              </p>
+
+              {motivationalMessage && (
+                <div className="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300">
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  <span>{motivationalMessage}</span>
+                </div>
+              )}
+            </div>
+
+            <Link
+              href="/jobs/new"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-navy-800 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-navy-700 dark:bg-orange-500 dark:hover:bg-orange-600"
+            >
+              New Job
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Card className="p-4">
+              <p className="stat-label">Revenue</p>
+              <p className="stat-value">{formatCurrency(monthlyRevenue)}</p>
+              <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Month to date</p>
+            </Card>
+            <Card className="p-4">
+              <p className="stat-label">Net</p>
+              <p className="stat-value">{formatCurrency(monthlyNet)}</p>
+              <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">After expenses</p>
+            </Card>
+            <Card className="p-4">
+              <p className="stat-label">Open Jobs</p>
+              <p className="stat-value">{activeJobCount}</p>
+              <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Currently active</p>
+            </Card>
+            <Card className="p-4">
+              <p className="stat-label">Due Soon</p>
+              <p className="stat-value">{data.reminders.length}</p>
+              <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Reminders in the next 3 days</p>
+            </Card>
+          </div>
         </div>
-      )}
+      </section>
 
-      {/* Reminders */}
+      <section className="mb-6">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="section-title mb-1">Jump back in</h2>
+            <p className="page-subtitle">The main actions you will reach for on a phone.</p>
+          </div>
+          <Link
+            href="/reports"
+            className="hidden items-center gap-1 text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-orange-300 dark:hover:text-orange-200 sm:inline-flex"
+          >
+            Reports
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {quickLinks.map((link) => {
+            const Icon = link.icon
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`group overflow-hidden rounded-[28px] border border-cream-200/90 bg-gradient-to-br ${link.tone} p-4 shadow-card transition-transform hover:-translate-y-0.5 dark:border-dark-border`}
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-navy-800 shadow-soft dark:bg-dark-card dark:text-dark-text">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <p className="mt-4 font-semibold text-navy-800 dark:text-dark-text">{link.label}</p>
+                <p className="mt-1 text-sm leading-6 text-navy-500 dark:text-dark-muted">{link.description}</p>
+                <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-navy-600 transition-transform group-hover:translate-x-0.5 dark:text-orange-300">
+                  Open
+                  <ArrowUpRight className="h-4 w-4" />
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
       {data.reminders.length > 0 && (
-        <ReminderBanners reminders={data.reminders} />
+        <section className="mb-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="section-title mb-1">Due soon</h2>
+              <p className="page-subtitle">Follow-ups, reminders, and near-term tasks.</p>
+            </div>
+            <span className="pill-badge bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+              {data.reminders.length}
+            </span>
+          </div>
+          <ReminderBanners reminders={data.reminders} />
+        </section>
       )}
 
-      {/* Monthly Stats */}
-      <MonthlyStats 
-        revenue={monthlyRevenue}
-        expenses={monthlyExpenses}
-        net={monthlyNet}
-      />
+      <MonthlyStats revenue={monthlyRevenue} expenses={monthlyExpenses} net={monthlyNet} />
 
-      {/* Jobs Needing Attention */}
-      {jobsNeedingAttention.length > 0 && (
-        <JobsAttention jobs={jobsNeedingAttention} />
-      )}
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div>
+          {jobsNeedingAttention.length > 0 && <JobsAttention jobs={jobsNeedingAttention} />}
+          {data.upcomingInstalls.length > 0 && <UpcomingInstalls installs={data.upcomingInstalls} />}
+        </div>
 
-      {/* Upcoming Installs */}
-      {data.upcomingInstalls.length > 0 && (
-        <UpcomingInstalls installs={data.upcomingInstalls} />
-      )}
-
-      {/* Spending Breakdown */}
-      {Object.keys(expensesByCategory).length > 0 && (
-        <SpendingBreakdown expenses={expensesByCategory} total={monthlyExpenses} />
-      )}
+        <div>
+          {Object.keys(expensesByCategory).length > 0 && (
+            <SpendingBreakdown expenses={expensesByCategory} total={monthlyExpenses} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

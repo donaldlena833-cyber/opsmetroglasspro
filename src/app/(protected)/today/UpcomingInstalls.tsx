@@ -1,10 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Card } from '@/components/ui/card'
 import { Calendar, ChevronRight, MapPin } from 'lucide-react'
+import { Card } from '@/components/ui/card'
 import { formatRelativeDate, truncate } from '@/lib/utils'
-import { Job, Client } from '@/lib/supabase/types'
 
 interface UpcomingInstallsProps {
   installs: any[]
@@ -15,43 +14,65 @@ export function UpcomingInstalls({ installs }: UpcomingInstallsProps) {
 
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Calendar className="w-4 h-4 text-blue-500" />
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-          Upcoming Installs
-        </h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-navy-50 text-navy-700 dark:bg-navy-900/20 dark:text-navy-200">
+            <Calendar className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
+              Upcoming Installs
+            </h2>
+            <p className="text-xs text-navy-400 dark:text-dark-muted">What is coming up in the next week.</p>
+          </div>
+        </div>
+        <span className="pill-badge bg-navy-50 text-navy-700 dark:bg-navy-900/20 dark:text-navy-200">
+          {installs.length}
+        </span>
       </div>
-      <Card className="divide-y divide-gray-100">
-        {installs.map((install) => (
-          <div
-            key={install.id}
-            onClick={() => router.push(`/jobs/${install.id}`)}
-            className="p-4 cursor-pointer hover:bg-cream-50 active:bg-cream-100 transition-colors first:rounded-t-2xl last:rounded-b-2xl"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-blue-600">
-                    {formatRelativeDate(install.install_date!)}
-                  </span>
+
+      <Card className="overflow-hidden">
+        <div className="divide-y divide-cream-200 dark:divide-dark-border">
+          {installs.map((install) => (
+            <button
+              key={install.id}
+              type="button"
+              onClick={() => router.push(`/jobs/${install.id}`)}
+              className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-cream-50 dark:hover:bg-dark-border/60"
+            >
+              <div className="rounded-2xl bg-cream-100 px-3 py-2 text-center dark:bg-dark-border">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-navy-500 dark:text-dark-muted">
+                  Install
+                </p>
+                <p className="mt-1 text-sm font-semibold text-navy-800 dark:text-dark-text">
+                  {formatRelativeDate(install.install_date!)}
+                </p>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold text-navy-800 dark:text-dark-text">{install.job_name}</h3>
                   {install.install_end_date && install.install_end_date !== install.install_date && (
-                    <span className="text-xs text-gray-400">
-                      → {formatRelativeDate(install.install_end_date)}
+                    <span className="text-xs text-navy-400 dark:text-dark-muted">
+                      through {formatRelativeDate(install.install_end_date)}
                     </span>
                   )}
                 </div>
-                <h3 className="font-medium text-navy-800 mt-1 truncate">
-                  {install.job_name}
-                </h3>
-                <div className="flex items-center gap-1 mt-0.5 text-sm text-gray-500">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span className="truncate">{truncate(install.address, 35)}</span>
+
+                {install.clients?.name && (
+                  <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">{install.clients.name}</p>
+                )}
+
+                <div className="mt-2 flex items-center gap-1 text-sm text-navy-500 dark:text-dark-muted">
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span className="truncate">{truncate(install.address, 42)}</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
-            </div>
-          </div>
-        ))}
+
+              <ChevronRight className="mt-2 h-5 w-5 shrink-0 text-navy-300 dark:text-dark-muted" />
+            </button>
+          ))}
+        </div>
       </Card>
     </div>
   )

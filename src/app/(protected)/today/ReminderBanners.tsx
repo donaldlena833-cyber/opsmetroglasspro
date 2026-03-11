@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { format, isToday, isPast, isTomorrow } from 'date-fns'
-import { Check, AlertCircle, Clock, Bell } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { ReminderPriority, ReminderWithJob } from '@/lib/supabase/types'
-import { reminderPriorityConfig } from '@/lib/utils'
+import { format, isPast, isToday, isTomorrow } from 'date-fns'
+import { AlertCircle, Bell, Check, Clock } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { cn, reminderPriorityConfig } from '@/lib/utils'
+import { ReminderWithJob } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 
 interface ReminderBannersProps {
@@ -20,8 +21,8 @@ export function ReminderBanners({ reminders }: ReminderBannersProps) {
   const [dismissing, setDismissing] = useState<string | null>(null)
   const supabase = createClient()
 
-  const handleMarkDone = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleMarkDone = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation()
     setDismissing(id)
 
     const { error } = await supabase
@@ -40,7 +41,7 @@ export function ReminderBanners({ reminders }: ReminderBannersProps) {
     }
 
     toast({
-      title: 'Done!',
+      title: 'Done',
       description: 'Reminder marked as complete',
       variant: 'success',
     })
@@ -49,84 +50,100 @@ export function ReminderBanners({ reminders }: ReminderBannersProps) {
   }
 
   const getDateLabel = (date: string) => {
-    const d = new Date(date)
-    if (isPast(d) && !isToday(d)) return 'Overdue'
-    if (isToday(d)) return 'Today'
-    if (isTomorrow(d)) return 'Tomorrow'
-    return format(d, 'MMM d')
+    const parsed = new Date(date)
+    if (isPast(parsed) && !isToday(parsed)) return 'Overdue'
+    if (isToday(parsed)) return 'Today'
+    if (isTomorrow(parsed)) return 'Tomorrow'
+    return format(parsed, 'MMM d')
   }
 
-  // Sort reminders: high first, then by date
-  const sortedReminders = [...reminders].sort((a, b) => {
+  const sortedReminders = [...reminders].sort((left, right) => {
     const priorityOrder = { high: 0, moderate: 1, low: 2 }
-    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-      return priorityOrder[a.priority] - priorityOrder[b.priority]
+    if (priorityOrder[left.priority] !== priorityOrder[right.priority]) {
+      return priorityOrder[left.priority] - priorityOrder[right.priority]
     }
-    return new Date(a.reminder_date).getTime() - new Date(b.reminder_date).getTime()
+
+    return new Date(left.reminder_date).getTime() - new Date(right.reminder_date).getTime()
   })
 
   return (
-    <div className="mb-6 space-y-2">
+    <div className="space-y-3">
       {sortedReminders.map((reminder) => {
         const config = reminderPriorityConfig[reminder.priority]
         const dateLabel = getDateLabel(reminder.reminder_date)
         const isOverdue = isPast(new Date(reminder.reminder_date)) && !isToday(new Date(reminder.reminder_date))
+        const badgeVariant =
+          reminder.priority === 'high'
+            ? 'danger'
+            : reminder.priority === 'moderate'
+              ? 'secondary'
+              : 'success'
 
         return (
-          <div
+          <Card
             key={reminder.id}
             onClick={() => reminder.jobs?.id && router.push(`/jobs/${reminder.jobs.id}`)}
             className={cn(
-              'flex items-center justify-between p-4 rounded-xl border transition-all',
-              config.bgColor,
-              config.borderColor,
+              'overflow-hidden border-l-4 p-4 transition-all',
+              reminder.priority === 'high'
+                ? 'border-l-red-500'
+                : reminder.priority === 'moderate'
+                  ? 'border-l-orange-500'
+                  : 'border-l-green-500',
               dismissing === reminder.id && 'opacity-50',
               reminder.jobs?.id && 'cursor-pointer active:scale-[0.99]'
             )}
           >
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className={cn(
-                'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-                reminder.priority === 'high' ? 'bg-red-100' :
-                reminder.priority === 'moderate' ? 'bg-orange-100' : 'bg-green-100'
-              )}>
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+                  config.bgColor
+                )}
+              >
                 {reminder.priority === 'high' ? (
-                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <AlertCircle className="h-5 w-5 text-red-600" />
                 ) : reminder.priority === 'moderate' ? (
-                  <Clock className="w-4 h-4 text-orange-600" />
+                  <Clock className="h-5 w-5 text-orange-600" />
                 ) : (
-                  <Bell className="w-4 h-4 text-green-600" />
+                  <Bell className="h-5 w-5 text-green-600" />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className={cn('font-medium text-sm', config.color)}>
-                  {reminder.title}
-                </p>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-navy-800 dark:text-dark-text">{reminder.title}</p>
+                  <Badge variant={badgeVariant as any}>{config.label}</Badge>
+                  <span
+                    className={cn(
+                      'rounded-full px-2.5 py-1 text-xs font-medium',
+                      isOverdue
+                        ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                        : 'bg-cream-100 text-navy-600 dark:bg-dark-border dark:text-dark-muted'
+                    )}
+                  >
+                    {dateLabel}
+                  </span>
+                </div>
+
                 {reminder.jobs && (
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                  <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">
                     {reminder.jobs.job_name}
                   </p>
                 )}
-                <p className={cn(
-                  'text-xs mt-1',
-                  isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
-                )}>
-                  {dateLabel}
-                </p>
               </div>
+
+              <button
+                type="button"
+                onClick={(event) => handleMarkDone(reminder.id, event)}
+                disabled={dismissing === reminder.id}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cream-200 bg-white text-navy-700 transition-colors hover:bg-cream-100 dark:border-dark-border dark:bg-dark-card dark:text-dark-text dark:hover:bg-dark-border"
+                aria-label={`Mark ${reminder.title} as done`}
+              >
+                <Check className="h-5 w-5" />
+              </button>
             </div>
-            <button
-              onClick={(e) => handleMarkDone(reminder.id, e)}
-              disabled={dismissing === reminder.id}
-              className={cn(
-                'flex-shrink-0 ml-3 w-10 h-10 rounded-full flex items-center justify-center transition-colors',
-                'bg-white/50 hover:bg-white active:scale-95',
-                config.color
-              )}
-            >
-              <Check className="w-5 h-5" />
-            </button>
-          </div>
+          </Card>
         )
       })}
     </div>

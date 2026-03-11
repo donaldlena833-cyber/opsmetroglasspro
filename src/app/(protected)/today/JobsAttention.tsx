@@ -1,9 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { JobWithRelations } from '@/lib/supabase/types'
 import { jobStatusConfig } from '@/lib/utils'
 
@@ -15,11 +15,14 @@ export function JobsAttention({ jobs }: JobsAttentionProps) {
   const router = useRouter()
 
   const getAttentionMessage = (job: JobsAttentionProps['jobs'][0]) => {
-    const hasDeposit = job.payments?.some(p => p.payment_type === 'deposit')
-    const hasGlassExpense = job.expenses?.some(e => 
-      e.category === 'glass_fabrication' || e.category === 'mr_glass'
+    const hasDeposit = job.payments?.some((payment) => payment.payment_type === 'deposit')
+    const hasGlassExpense = job.expenses?.some(
+      (expense) =>
+        expense.category === 'glass_fabrication' ||
+        expense.category === 'mr_glass' ||
+        expense.category === 'glass'
     )
-    const hasFinalPayment = job.payments?.some(p => p.payment_type === 'final')
+    const hasFinalPayment = job.payments?.some((payment) => payment.payment_type === 'final')
 
     if (['deposit_received', 'measured', 'ordered', 'installed'].includes(job.status) && !hasDeposit) {
       return 'Waiting for deposit'
@@ -35,13 +38,24 @@ export function JobsAttention({ jobs }: JobsAttentionProps) {
 
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-4 h-4 text-orange-500" />
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-          Needs Attention
-        </h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
+              Needs Attention
+            </h2>
+            <p className="text-xs text-navy-400 dark:text-dark-muted">Jobs with a blocker or missing next step.</p>
+          </div>
+        </div>
+        <span className="pill-badge bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+          {jobs.length}
+        </span>
       </div>
-      <div className="space-y-2">
+
+      <div className="space-y-3">
         {jobs.map((job) => {
           const statusConfig = jobStatusConfig[job.status]
           const attentionMessage = getAttentionMessage(job)
@@ -50,28 +64,27 @@ export function JobsAttention({ jobs }: JobsAttentionProps) {
             <Card
               key={job.id}
               onClick={() => router.push(`/jobs/${job.id}`)}
-              className="p-4 cursor-pointer active:scale-[0.99] transition-transform"
+              className="cursor-pointer p-4 transition-transform active:scale-[0.99]"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-navy-800 truncate">
-                      {job.job_name}
-                    </h3>
-                    <Badge variant={job.status as any} className="flex-shrink-0">
-                      {statusConfig.label}
-                    </Badge>
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cream-100 text-navy-700 dark:bg-dark-border dark:text-dark-text">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-navy-800 dark:text-dark-text">{job.job_name}</h3>
+                    <Badge variant={job.status as any}>{statusConfig.label}</Badge>
                   </div>
                   {job.clients && (
-                    <p className="text-sm text-gray-500 mt-0.5 truncate">
-                      {job.clients.name}
-                    </p>
+                    <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">{job.clients.name}</p>
                   )}
-                  <p className="text-sm text-orange-600 font-medium mt-1">
+                  <div className="mt-3 inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
                     {attentionMessage}
-                  </p>
+                  </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+
+                <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-navy-300 dark:text-dark-muted" />
               </div>
             </Card>
           )
