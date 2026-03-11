@@ -13,7 +13,8 @@ AS $$
     AND COALESCE(LOWER(auth.jwt() ->> 'email'), '') LIKE '%@metroglasspro.com';
 $$;
 
-CREATE OR REPLACE FUNCTION public.get_next_invoice_number()
+DROP FUNCTION IF EXISTS public.get_next_invoice_number();
+CREATE FUNCTION public.get_next_invoice_number()
 RETURNS INTEGER
 LANGUAGE plpgsql
 SET search_path = public
@@ -41,7 +42,8 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.generate_monthly_report(report_date DATE)
+DROP FUNCTION IF EXISTS public.generate_monthly_report(DATE);
+CREATE FUNCTION public.generate_monthly_report(report_date DATE)
 RETURNS UUID
 LANGUAGE plpgsql
 SET search_path = public
