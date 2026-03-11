@@ -7,6 +7,7 @@ const envValues = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 } as const
 
 function getFirstAvailableEnv(name: string, fallbacks: string[] = []) {
@@ -54,5 +55,6 @@ export function getServiceSupabaseEnv() {
 export function getStripeEnv() {
   return {
     secretKey: getOptionalEnv('STRIPE_SECRET_KEY'),
+    webhookSecret: getOptionalEnv('STRIPE_WEBHOOK_SECRET'),
   }
 }

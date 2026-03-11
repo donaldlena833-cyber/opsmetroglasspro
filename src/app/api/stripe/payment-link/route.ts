@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
         invoice_id: invoice.id,
         job_id: invoice.job_id,
         invoice_number: String(invoice.invoice_number),
+        payment_type: 'final',
+        source: 'stripe_payment_link',
       },
     })
 
@@ -87,6 +89,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         invoice_id: invoice.id,
         invoice_number: String(invoice.invoice_number),
+        payment_type: 'final',
+        source: 'stripe_payment_link',
       },
     })
 
@@ -103,6 +107,8 @@ export async function POST(request: NextRequest) {
         invoice_id: invoice.id,
         job_id: invoice.job_id,
         invoice_number: String(invoice.invoice_number),
+        payment_type: 'final',
+        source: 'stripe_payment_link',
       },
       payment_intent_data: {
         metadata: {
@@ -110,6 +116,8 @@ export async function POST(request: NextRequest) {
           job_id: invoice.job_id,
           invoice_number: String(invoice.invoice_number),
           due_date: invoice.due_date,
+          payment_type: 'final',
+          source: 'stripe_payment_link',
         },
       },
       after_completion: {

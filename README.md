@@ -66,6 +66,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXT_PUBLIC_APP_URL=https://ops.metroglasspro.com
 STRIPE_SECRET_KEY=sk_live_or_test_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
 ```
 
 ### 3. Local Development
@@ -89,7 +90,9 @@ Open [http://localhost:3000](http://localhost:3000)
 1. Create or log into your Stripe account at [stripe.com](https://stripe.com)
 2. Copy your Stripe secret key
 3. Add `STRIPE_SECRET_KEY` to Vercel
-4. Redeploy after saving the new env var
+4. Add a webhook endpoint in Stripe pointing to `https://ops.metroglasspro.com/api/stripe/webhook`
+5. Copy the webhook signing secret and save it in Vercel as `STRIPE_WEBHOOK_SECRET`
+6. Redeploy after saving the new env vars
 
 ### 5. Existing Deployment Migrations
 
@@ -133,6 +136,12 @@ Access from Settings to view:
 - Open any invoice detail page to create a Stripe payment link.
 - The link amount uses the remaining invoice balance based on recorded payments.
 - The link is created on demand and can be copied or shared right from the phone.
+
+### Stripe Webhook
+- Stripe should post to `https://ops.metroglasspro.com/api/stripe/webhook`
+- At minimum, listen for `checkout.session.completed`
+- Recommended: also add `checkout.session.async_payment_succeeded`
+- The webhook inserts the Stripe payment into Supabase and updates the invoice status automatically
 
 ### Dark Mode
 Toggle in Settings > Appearance
