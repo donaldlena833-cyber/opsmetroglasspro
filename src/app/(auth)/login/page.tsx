@@ -67,7 +67,7 @@ export default function LoginPage() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
         variant: 'destructive',
       })
     } finally {
