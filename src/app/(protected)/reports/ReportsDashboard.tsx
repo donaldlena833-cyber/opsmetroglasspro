@@ -134,9 +134,16 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
           </div>
           <p className={cn(
             'text-xl font-bold',
-            data.month.margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+            currentData.revenue > 0 
+              ? ((currentData.revenue - currentData.expenses) / currentData.revenue * 100) >= 0 
+                ? 'text-green-600 dark:text-green-400' 
+                : 'text-red-600 dark:text-red-400'
+              : 'text-gray-400'
           )}>
-            {data.month.margin.toFixed(1)}%
+            {currentData.revenue > 0 
+              ? `${((currentData.revenue - currentData.expenses) / currentData.revenue * 100).toFixed(1)}%`
+              : '0.0%'
+            }
           </p>
         </Card>
       </div>
@@ -185,7 +192,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                 .sort(([, a], [, b]) => b - a)
                 .map(([category, amount]) => {
                   const display = getSpendingCategoryDisplay(category as any)
-                  const percentage = (amount / data.month.expenses) * 100
+                  const percentage = data.month.expenses > 0 ? (amount / data.month.expenses) * 100 : 0
 
                   return (
                     <div key={category} className="flex items-center gap-3">

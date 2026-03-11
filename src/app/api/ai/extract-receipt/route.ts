@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
 
     // Use Gemini Flash for analysis
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
     const prompt = `Analyze this receipt or invoice image and extract the following information.
 Return ONLY a JSON object with these fields (no markdown, no explanation):
@@ -26,18 +26,19 @@ Return ONLY a JSON object with these fields (no markdown, no explanation):
   "total_amount": <number - the final total amount paid, without currency symbols>,
   "vendor_name": "<string - the business/vendor name>",
   "date": "<string - date in YYYY-MM-DD format if visible, otherwise null>",
-  "suggested_category": "<string - one of: crl, glass_fabrication, mr_glass, home_depot, uhaul, parking, tolls, tools, meals, referral_payout, other>"
+  "suggested_category": "<string - one of: glass, hardware, consumables, subcontractor, gas_fuel, vehicle, tools_equipment, office_admin, food_meals, other>"
 }
 
 Category hints:
-- "crl" = C.R. Laurence hardware
-- "glass_fabrication" or "mr_glass" = glass fabrication shops
-- "home_depot" = Home Depot stores
-- "uhaul" = U-Haul rentals
-- "parking" = parking garages/meters
-- "tolls" = toll payments, E-ZPass
-- "tools" = tool purchases
-- "meals" = restaurants, food
+- "glass" = glass fabrication shops, glass suppliers (Mr Glass, etc)
+- "hardware" = C.R. Laurence, hardware stores, Home Depot
+- "consumables" = silicone, tape, cleaning supplies
+- "subcontractor" = labor help
+- "gas_fuel" = gas stations, fuel
+- "vehicle" = U-Haul rentals, parking, tolls, vehicle maintenance
+- "tools_equipment" = tool purchases, equipment
+- "office_admin" = office supplies, software, admin
+- "food_meals" = restaurants, food, coffee
 - "other" = anything else
 
 If you cannot determine a value, use null for that field.

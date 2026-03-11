@@ -1,6 +1,6 @@
 {
   "name": "metroglassops",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Internal operations system for MetroGlass Pro Inc",
   "private": true,
   "scripts": {

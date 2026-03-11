@@ -7,37 +7,67 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, Plus, ChevronRight, FileText } from 'lucide-react'
-import { formatCurrency, formatDateShort, invoiceStatusConfig } from '@/lib/utils'
-import { InvoiceWithJob } from '@/lib/supabase/types'
+import { formatCurrency, formatDateShort, invoiceStatusConfig, cn } from '@/lib/utils'
+import { InvoiceWithJob, InvoiceStatus } from '@/lib/supabase/types'
 
 interface InvoicesListProps {
   initialInvoices: InvoiceWithJob[]
 }
 
+type StatusFilter = 'all' | InvoiceStatus
+
+const statusFilterOptions: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'deposit_paid', label: 'Deposit Paid' },
+  { value: 'paid', label: 'Paid' },
+]
+
 export function InvoicesList({ initialInvoices }: InvoicesListProps) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   const filteredInvoices = initialInvoices.filter((invoice) => {
     const searchLower = search.toLowerCase()
-    return (
+    const matchesSearch =
       search === '' ||
       invoice.invoice_number.toString().includes(search) ||
       invoice.customer_name.toLowerCase().includes(searchLower) ||
       invoice.jobs?.job_name?.toLowerCase().includes(searchLower)
-    )
+
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter
+
+    return matchesSearch && matchesStatus
   })
 
   return (
     <>
-      {/* Search */}
-      <div className="mb-4">
+      {/* Search & Filter */}
+      <div className="mb-4 space-y-3">
         <Input
           placeholder="Search by invoice #, client, job..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           icon={<Search className="w-5 h-5" />}
         />
+
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {statusFilterOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setStatusFilter(option.value)}
+              className={cn(
+                'px-4 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all',
+                statusFilter === option.value
+                  ? 'bg-orange-500 text-white shadow-soft'
+                  : 'bg-white dark:bg-dark-card text-gray-600 dark:text-dark-muted border-2 border-cream-200 dark:border-dark-border'
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Invoices List */}

@@ -14,6 +14,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { ArrowLeft, Camera, Loader2, Sparkles, Search, Upload } from 'lucide-react'
 import { expenseCategoryConfig, paymentMethodConfig } from '@/lib/utils'
 import { ExpenseCategory, PaymentMethod, Job } from '@/lib/supabase/types'
@@ -28,6 +36,7 @@ export default function QuickExpensePage() {
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [showAddAnother, setShowAddAnother] = useState(false)
   const [jobs, setJobs] = useState<any[]>([])
   const [jobSearch, setJobSearch] = useState('')
   const [showJobDropdown, setShowJobDropdown] = useState(false)
@@ -162,22 +171,8 @@ export default function QuickExpensePage() {
     }
 
     toast({ title: 'Expense saved!', variant: 'success' })
-
-    // Ask if want to add another
-    if (window.confirm('Add another expense?')) {
-      setImagePreview(null)
-      setReceiptUrl(null)
-      setAmount('')
-      setVendor('')
-      setCategory('other')
-      setJobId(null)
-      setJobSearch('')
-      setStep('camera')
-      setTimeout(() => fileInputRef.current?.click(), 100)
-    } else {
-      router.push('/today')
-      router.refresh()
-    }
+    setLoading(false)
+    setShowAddAnother(true)
   }
 
   return (
@@ -371,6 +366,47 @@ export default function QuickExpensePage() {
           </Button>
         </form>
       )}
+
+      {/* Add Another Dialog */}
+      <Dialog open={showAddAnother} onOpenChange={setShowAddAnother}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Expense Saved!</DialogTitle>
+            <DialogDescription>
+              Would you like to add another expense?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddAnother(false)
+                router.push('/today')
+                router.refresh()
+              }}
+            >
+              Done
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setShowAddAnother(false)
+                setImagePreview(null)
+                setReceiptUrl(null)
+                setAmount('')
+                setVendor('')
+                setCategory('other')
+                setJobId(null)
+                setJobSearch('')
+                setStep('camera')
+                setTimeout(() => fileInputRef.current?.click(), 100)
+              }}
+            >
+              Add Another
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

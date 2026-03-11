@@ -170,6 +170,23 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Clients Link */}
+      <Card className="mb-4">
+        <CardContent>
+          <Link href="/clients" className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-navy-800 dark:text-dark-text flex items-center gap-2">
+                👥 Clients
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-dark-muted">
+                View and manage your client list
+              </p>
+            </div>
+            <span className="text-gray-400">→</span>
+          </Link>
+        </CardContent>
+      </Card>
+
       {/* About */}
       <Card>
         <CardContent>
@@ -178,7 +195,7 @@ export default function SettingsPage() {
             About
           </h3>
           <div className="text-sm text-gray-500 dark:text-dark-muted space-y-1">
-            <p>MetroGlassOps v2.0.0</p>
+            <p>MetroGlassOps v2.1.0</p>
             <p>Internal operations system</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
               © 2025 MetroGlass Pro Inc

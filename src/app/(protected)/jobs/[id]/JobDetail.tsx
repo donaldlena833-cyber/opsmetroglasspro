@@ -65,7 +65,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
 
   const [job, setJob] = useState(initialJob)
   const [activeTab, setActiveTab] = useState('overview')
-  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null)
@@ -98,7 +98,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
   }
 
   const handleSaveEdit = async () => {
-    setEditing(true)
+    setSaving(true)
     const { error } = await supabase
       .from('jobs')
       .update({
@@ -111,7 +111,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
 
     if (error) {
       toast({ title: 'Error', description: 'Failed to update job', variant: 'destructive' })
-      setEditing(false)
+      setSaving(false)
       return
     }
 
@@ -122,7 +122,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
       install_end_date: editInstallEndDate || null,
       notes: editNotes || null,
     })
-    setEditing(false)
+    setSaving(false)
     toast({ title: 'Saved', description: 'Job details updated', variant: 'success' })
     router.refresh()
   }
@@ -324,7 +324,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                 rows={4}
               />
 
-              <Button onClick={handleSaveEdit} loading={editing} className="w-full">
+              <Button onClick={handleSaveEdit} loading={saving} className="w-full">
                 Save Changes
               </Button>
             </CardContent>
