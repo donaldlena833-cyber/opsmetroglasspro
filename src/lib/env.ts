@@ -6,6 +6,7 @@ const envValues = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
 } as const
 
 function getFirstAvailableEnv(name: string, fallbacks: string[] = []) {
@@ -32,6 +33,10 @@ function getRequiredEnv(name: string, fallbacks: string[] = []) {
   return value
 }
 
+function getOptionalEnv(name: string, fallbacks: string[] = []) {
+  return getFirstAvailableEnv(name, fallbacks)
+}
+
 export function getPublicSupabaseEnv() {
   return {
     url: getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
@@ -43,5 +48,11 @@ export function getServiceSupabaseEnv() {
   return {
     ...getPublicSupabaseEnv(),
     serviceRoleKey: getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY', ['SUPABASE_SECRET_KEY']),
+  }
+}
+
+export function getStripeEnv() {
+  return {
+    secretKey: getOptionalEnv('STRIPE_SECRET_KEY'),
   }
 }

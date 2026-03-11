@@ -46,6 +46,7 @@ In Vercel, open the project and confirm these exist:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `STRIPE_SECRET_KEY` if you want Stripe payment links inside invoices
 
 If any are missing, add them and redeploy.
 
@@ -62,6 +63,7 @@ If any are missing, add them and redeploy.
 3. Tap a receipt image and confirm it opens.
 4. Open a job with an attached receipt and confirm that image loads there too.
 5. In Supabase, re-run the linter/security checks and confirm the fixed warnings are gone.
+6. Open an invoice and create a Stripe payment link.
 
 ## If you want the fastest path
 

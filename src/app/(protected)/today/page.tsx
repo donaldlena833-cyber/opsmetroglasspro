@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card'
 import { ReminderBanners } from './ReminderBanners'
 import { JobsAttention } from './JobsAttention'
 import { UpcomingInstalls } from './UpcomingInstalls'
-import { MonthlyStats } from './MonthlyStats'
 import { SpendingBreakdown } from './SpendingBreakdown'
 import { formatCurrency, getGreeting, getMotivationalMessage } from '@/lib/utils'
 
@@ -276,9 +275,6 @@ export default async function TodayPage() {
           <ReminderBanners reminders={data.reminders} />
         </section>
       )}
-
-      <MonthlyStats revenue={monthlyRevenue} expenses={monthlyExpenses} net={monthlyNet} />
-
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div>
           {jobsNeedingAttention.length > 0 && <JobsAttention jobs={jobsNeedingAttention} />}

@@ -15,7 +15,8 @@ async function getInvoice(id: string) {
     .from('invoices')
     .select(`
       *,
-      jobs (id, job_name, address, clients (*))
+      jobs (id, job_name, address, clients (*)),
+      payments (*)
     `)
     .eq('id', id)
     .single()

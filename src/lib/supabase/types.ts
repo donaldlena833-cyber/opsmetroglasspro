@@ -487,6 +487,7 @@ export type InvoiceWithJob = Invoice & {
   jobs: (Job & {
     clients: Client | null
   }) | null
+  payments: Payment[]
 }
 
 export type ExpenseWithJob = Expense & {

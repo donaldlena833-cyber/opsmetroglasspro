@@ -7,6 +7,7 @@ Internal operations system for MetroGlass Pro Inc - a custom shower glass instal
 - **🌙 Dark Mode**: Manual toggle in Settings for comfortable viewing
 - **📊 Reports Dashboard**: Monthly, quarterly, and yearly analytics with charts
 - **💰 Stripe Fee Tracking**: Automatic calculation of 2.9% + $0.30 fees
+- **🔗 Stripe Payment Links**: Create hosted payment links directly from invoice detail
 - **🔧 Job Specifications**: Track glass type, thickness, hardware finish, configuration, and dimensions
 - **💵 Job Values**: Invoice totals displayed on job cards
 - **📁 Expanded Expense Categories**: Job costs (Glass, Hardware, Consumables, Subcontractor) and Business expenses (Gas, Vehicle, Tools, Office, Meals)
@@ -21,6 +22,7 @@ Internal operations system for MetroGlass Pro Inc - a custom shower glass instal
 - **Expense Tracking**: Log expenses with receipt photos, categorized by type
 - **Payment Recording**: Track deposits and final payments with Stripe fee calculation
 - **Invoice Generation**: Create professional PDF invoices with discount and tax options
+- **Stripe Collection Links**: Generate a payment link for the remaining invoice balance
 - **Reminders**: Set priority-based reminders for follow-ups and payments
 - **Dashboard**: View monthly revenue, expenses, net profit, and jobs needing attention
 - **Reports**: Monthly/quarterly/yearly analytics with profit margins
@@ -63,6 +65,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXT_PUBLIC_APP_URL=https://ops.metroglasspro.com
+STRIPE_SECRET_KEY=sk_live_or_test_your_stripe_secret_key
 ```
 
 ### 3. Local Development
@@ -80,6 +83,13 @@ Open [http://localhost:3000](http://localhost:3000)
 2. Connect to Vercel
 3. Add environment variables in Vercel dashboard
 4. Deploy
+
+### 4a. Stripe Setup For Payment Links
+
+1. Create or log into your Stripe account at [stripe.com](https://stripe.com)
+2. Copy your Stripe secret key
+3. Add `STRIPE_SECRET_KEY` to Vercel
+4. Redeploy after saving the new env var
 
 ### 5. Existing Deployment Migrations
 
@@ -105,7 +115,7 @@ Estimate → Deposit Received → Measured → Ordered → Installed → Closed
 
 ### Dashboard
 - **Centered greeting** with motivational messages based on performance
-- **Monthly stats** showing revenue, expenses, and net profit
+- **Single primary dashboard** without the older duplicate stats block
 - **Jobs needing attention** with action alerts
 
 ### Reports
@@ -118,6 +128,11 @@ Access from Settings to view:
 ### Receipts
 - Uploaded receipts are stored as Supabase Storage object paths.
 - Expenses and job detail screens generate signed URLs on the server so receipt previews work with a private bucket.
+
+### Stripe Links
+- Open any invoice detail page to create a Stripe payment link.
+- The link amount uses the remaining invoice balance based on recorded payments.
+- The link is created on demand and can be copied or shared right from the phone.
 
 ### Dark Mode
 Toggle in Settings > Appearance
