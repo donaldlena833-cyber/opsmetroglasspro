@@ -38,7 +38,7 @@ const SheetContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-3xl border-t border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-sheet dark:shadow-card-dark',
+        'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-3xl border-t border-cream-200/90 bg-white/96 shadow-sheet backdrop-blur-md dark:border-dark-border dark:bg-dark-card/96 dark:shadow-card-dark',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
         'duration-300',
@@ -46,7 +46,7 @@ const SheetContent = React.forwardRef<
       )}
       {...props}
     >
-      <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-gray-300 dark:bg-gray-600" />
+      <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-cream-300 dark:bg-gray-600" />
       {children}
     </DialogPrimitive.Content>
   </SheetPortal>

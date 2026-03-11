@@ -80,8 +80,8 @@ export function getPreviousPeriodRange(period: 'month' | 'quarter' | 'year') {
 // Job status display info
 export const jobStatusConfig: Record<JobStatus, { label: string; color: string; bgColor: string }> = {
   estimate: { label: 'Estimate', color: 'text-gray-600', bgColor: 'bg-gray-100' },
-  deposit_received: { label: 'Deposit Received', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  measured: { label: 'Measured', color: 'text-purple-600', bgColor: 'bg-purple-50' },
+  deposit_received: { label: 'Deposit Received', color: 'text-navy-700', bgColor: 'bg-cream-100' },
+  measured: { label: 'Measured', color: 'text-navy-700', bgColor: 'bg-navy-50' },
   ordered: { label: 'Ordered', color: 'text-orange-600', bgColor: 'bg-orange-50' },
   installed: { label: 'Installed', color: 'text-green-600', bgColor: 'bg-green-50' },
   closed: { label: 'Closed', color: 'text-gray-500', bgColor: 'bg-gray-100' },
@@ -177,14 +177,14 @@ export const paymentMethodConfig: Record<PaymentMethod, { label: string }> = {
 
 // Payment type display
 export const paymentTypeConfig: Record<PaymentType, { label: string; color: string }> = {
-  deposit: { label: 'Deposit', color: 'text-blue-600' },
+  deposit: { label: 'Deposit', color: 'text-navy-700' },
   final: { label: 'Final', color: 'text-green-600' },
   other: { label: 'Other', color: 'text-gray-600' },
 }
 
 // Invoice status display
 export const invoiceStatusConfig: Record<InvoiceStatus, { label: string; color: string; bgColor: string }> = {
-  sent: { label: 'Sent', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+  sent: { label: 'Sent', color: 'text-navy-700', bgColor: 'bg-cream-100' },
   deposit_paid: { label: 'Deposit Paid', color: 'text-orange-600', bgColor: 'bg-orange-50' },
   paid: { label: 'Paid', color: 'text-green-600', bgColor: 'bg-green-50' },
 }

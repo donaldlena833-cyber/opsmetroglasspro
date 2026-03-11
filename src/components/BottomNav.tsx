@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { QuickActionsSheet } from './QuickActionsSheet'
 
 const navItems = [
-  { href: '/today', label: 'Home', icon: Home },
+  { href: '/today', label: 'Today', icon: Home },
   { href: '/jobs', label: 'Jobs', icon: Briefcase },
   { href: '#add', label: 'Add', icon: Plus, isAction: true },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
@@ -21,21 +21,21 @@ export function BottomNav() {
 
   return (
     <>
-      {/* V3: Floating bottom nav with rounded corners */}
-      <nav className="fixed bottom-4 left-4 right-4 z-40 bg-white dark:bg-dark-card rounded-3xl shadow-float dark:shadow-card-dark safe-bottom">
-        <div className="flex items-center justify-around h-18 max-w-lg mx-auto px-2">
+      <nav className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-[30px] border border-cream-200/80 bg-white/88 shadow-float backdrop-blur-xl dark:border-dark-border dark:bg-dark-card/90 dark:shadow-card-dark safe-bottom">
+        <div className="flex h-20 items-center justify-around px-2">
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = pathname.startsWith(item.href) && !item.isAction
+            const isActive = !item.isAction && (pathname === item.href || pathname.startsWith(`${item.href}/`))
 
             if (item.isAction) {
               return (
                 <button
                   key={item.href}
                   onClick={() => setShowQuickActions(true)}
-                  className="flex flex-col items-center justify-center w-16 h-16 -mt-8"
+                  className="flex h-16 w-16 flex-col items-center justify-center -mt-10"
+                  aria-label="Open quick actions"
                 >
-                  <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-500 text-white shadow-float transition-all duration-200 active:scale-95 hover:bg-orange-600">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[26px] border-4 border-cream-50 bg-navy-800 text-cream-50 shadow-float transition-all duration-200 active:scale-95 hover:bg-navy-700 dark:border-dark-card">
                     <Icon className="h-7 w-7" strokeWidth={2.5} />
                   </div>
                 </button>
@@ -47,19 +47,19 @@ export function BottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex flex-col items-center justify-center w-16 h-16 transition-all duration-300 ease-out rounded-2xl',
-                  isActive ? 'text-orange-500' : 'text-gray-400 dark:text-dark-muted hover:text-gray-600 dark:hover:text-gray-300'
+                  'flex h-16 w-16 flex-col items-center justify-center rounded-2xl transition-all duration-300 ease-out',
+                  isActive ? 'text-navy-800 dark:text-dark-text' : 'text-navy-400 dark:text-dark-muted hover:text-navy-600 dark:hover:text-gray-300'
                 )}
               >
                 <div className={cn(
-                  'p-2 rounded-xl transition-colors',
-                  isActive && 'bg-orange-100 dark:bg-orange-900/30'
+                  'rounded-2xl p-2.5 transition-all',
+                  isActive && 'border border-cream-200 bg-cream-100 shadow-soft dark:border-dark-border dark:bg-dark-border'
                 )}>
                   <Icon className="h-6 w-6" strokeWidth={isActive ? 2.5 : 2} />
                 </div>
                 <span className={cn(
-                  'text-[10px] mt-0.5 font-semibold',
-                  isActive ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400 dark:text-dark-muted'
+                  'mt-1 text-[10px] font-semibold uppercase tracking-[0.12em]',
+                  isActive ? 'text-navy-700 dark:text-dark-text' : 'text-navy-400 dark:text-dark-muted'
                 )}>
                   {item.label}
                 </span>

@@ -1,16 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { Nunito } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/lib/theme-context'
-
-// V3: Nunito - friendly, rounded font
-const nunito = Nunito({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-nunito',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: 'MetroGlassOps',
@@ -40,7 +31,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#FBF7F0',
+  themeColor: '#F7F2EA',
 }
 
 export default function RootLayout({
@@ -49,14 +40,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={nunito.variable}>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-icon-180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="theme-color" content="#FBF7F0" />
+        <meta name="theme-color" content="#F7F2EA" />
       </head>
-      <body className={`${nunito.className} min-h-screen bg-cream-100 dark:bg-dark-bg transition-colors duration-200`}>
+      <body className="min-h-screen bg-cream-50 text-navy-700 dark:bg-dark-bg dark:text-dark-text transition-colors duration-200">
         <ThemeProvider>
           {children}
           <Toaster />

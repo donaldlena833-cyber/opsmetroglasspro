@@ -15,15 +15,15 @@ const badgeVariants = cva(
         danger: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
         info: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
         purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-        // Job status variants - V3: softer, more colorful
+        // Job status variants
         estimate: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-        deposit_received: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-        measured: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+        deposit_received: 'bg-cream-200 dark:bg-dark-border text-navy-700 dark:text-dark-text',
+        measured: 'bg-navy-100 dark:bg-navy-900/40 text-navy-700 dark:text-navy-200',
         ordered: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
         installed: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
         closed: 'bg-cream-200 dark:bg-dark-border text-gray-500 dark:text-gray-400',
         // Invoice status variants
-        sent: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+        sent: 'bg-cream-200 dark:bg-dark-border text-navy-700 dark:text-dark-text',
         deposit_paid: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
         paid: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
       },

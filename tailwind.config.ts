@@ -10,54 +10,54 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // V3: Warmer cream/off-white background
+        // Brand: cream surfaces inspired by metroglasspro.com
         cream: {
           50: '#FFFCF7',
-          100: '#FBF7F0',
-          200: '#F5EEE5',
-          300: '#EDE4D9',
+          100: '#F7F2EA',
+          200: '#EEE6D8',
+          300: '#DCCFBB',
         },
-        // V3: Softer navy for text
+        // Brand: charcoal scale for text, borders, and dark surfaces
         navy: {
-          DEFAULT: '#2D3748',
-          50: '#F7FAFC',
-          100: '#EDF2F7',
-          200: '#E2E8F0',
-          300: '#CBD5E0',
-          400: '#A0AEC0',
-          500: '#718096',
-          600: '#4A5568',
-          700: '#2D3748',
-          800: '#1A202C',
-          900: '#171923',
+          DEFAULT: '#342F2B',
+          50: '#F6F4F0',
+          100: '#ECE6DE',
+          200: '#D8CEC0',
+          300: '#B9AA98',
+          400: '#948372',
+          500: '#716254',
+          600: '#54493F',
+          700: '#3B332D',
+          800: '#2A241F',
+          900: '#1A1613',
         },
-        // V3: Golden amber orange (warmer, like reference)
+        // Muted bronze accent for highlights and calls to action
         orange: {
-          DEFAULT: '#F59E0B',
-          50: '#FFFBEB',
-          100: '#FEF3C7',
-          200: '#FDE68A',
-          300: '#FCD34D',
-          400: '#FBBF24',
-          500: '#F59E0B',
-          600: '#D97706',
-          700: '#B45309',
-          800: '#92400E',
-          900: '#78350F',
+          DEFAULT: '#B88A52',
+          50: '#FCF7F0',
+          100: '#F3E7D4',
+          200: '#E6CFAB',
+          300: '#D2B27E',
+          400: '#BE965B',
+          500: '#B88A52',
+          600: '#946C40',
+          700: '#715232',
+          800: '#543D25',
+          900: '#3A2918',
         },
-        // V3: Dark mode colors (warmer)
+        // Dark mode stays warm instead of cold blue-gray
         dark: {
-          bg: '#1A1D23',
-          card: '#252830',
-          border: '#3A3F4B',
-          text: '#F5F5F5',
-          muted: '#9CA3AF',
+          bg: '#161412',
+          card: '#221E1A',
+          border: '#3A332D',
+          text: '#F6F1E8',
+          muted: '#B2A697',
         },
       },
       fontFamily: {
-        // V3: Nunito - friendly, rounded font
-        sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        display: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        // Match the brand site's polished, system-first feel.
+        sans: ['"Avenir Next"', 'Avenir', '"Helvetica Neue"', '"Segoe UI"', 'Arial', 'sans-serif'],
+        display: ['"Avenir Next"', 'Avenir', '"Helvetica Neue"', '"Segoe UI"', 'Arial', 'sans-serif'],
       },
       borderRadius: {
         // V3: Extra rounded corners (pillowy look)
@@ -66,14 +66,14 @@ const config: Config = {
       },
       boxShadow: {
         // V3: Soft, floating shadows
-        'card': '0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.08)',
-        'card-hover': '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.12)',
-        'card-lg': '0 4px 16px -4px rgba(0, 0, 0, 0.08), 0 8px 32px -8px rgba(0, 0, 0, 0.12)',
-        'soft': '0 2px 12px -3px rgba(0, 0, 0, 0.06)',
-        'float': '0 8px 30px -10px rgba(0, 0, 0, 0.15)',
-        'sheet': '0 -8px 30px -10px rgba(0, 0, 0, 0.12)',
+        'card': '0 10px 30px -22px rgba(26, 22, 19, 0.28), 0 14px 40px -30px rgba(59, 51, 45, 0.22)',
+        'card-hover': '0 18px 44px -28px rgba(26, 22, 19, 0.34), 0 24px 52px -36px rgba(59, 51, 45, 0.24)',
+        'card-lg': '0 24px 60px -38px rgba(26, 22, 19, 0.4), 0 30px 70px -46px rgba(59, 51, 45, 0.28)',
+        'soft': '0 8px 24px -20px rgba(26, 22, 19, 0.24)',
+        'float': '0 22px 50px -34px rgba(26, 22, 19, 0.38), 0 12px 30px -24px rgba(59, 51, 45, 0.26)',
+        'sheet': '0 -18px 50px -34px rgba(26, 22, 19, 0.38)',
         // Dark mode shadows
-        'card-dark': '0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 4px 16px -4px rgba(0, 0, 0, 0.3)',
+        'card-dark': '0 20px 50px -34px rgba(0, 0, 0, 0.6), 0 10px 26px -18px rgba(0, 0, 0, 0.45)',
       },
       spacing: {
         // V3: More generous spacing
