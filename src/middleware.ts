@@ -3,6 +3,23 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getPublicSupabaseEnv } from '@/lib/env'
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  const isPublicRoute =
+    pathname === '/login' ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname.includes('.') ||
+    pathname === '/favicon.ico'
+
+  if (isPublicRoute) {
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+  }
+
   const { url, anonKey } = getPublicSupabaseEnv()
   let response = NextResponse.next({
     request: {
@@ -39,10 +56,10 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Protected routes
-  const isProtectedRoute = !request.nextUrl.pathname.startsWith('/login') && 
-                          !request.nextUrl.pathname.startsWith('/api') &&
-                          !request.nextUrl.pathname.startsWith('/_next') &&
-                          !request.nextUrl.pathname.includes('.')
+  const isProtectedRoute = !pathname.startsWith('/login') &&
+                          !pathname.startsWith('/api') &&
+                          !pathname.startsWith('/_next') &&
+                          !pathname.includes('.')
 
   if (isProtectedRoute && !user) {
     const redirectUrl = new URL('/login', request.url)
@@ -50,7 +67,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect logged in users away from login
-  if (request.nextUrl.pathname === '/login' && user) {
+  if (pathname === '/login' && user) {
     const redirectUrl = new URL('/today', request.url)
     return NextResponse.redirect(redirectUrl)
   }

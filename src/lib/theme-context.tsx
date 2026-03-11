@@ -27,7 +27,6 @@ const themeScript = `
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
     // Load theme from localStorage on mount
@@ -60,13 +59,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
     // Also save to database if user is logged in
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         await supabase
           .from('user_preferences')
           .upsert({ user_id: user.id, theme: newTheme }, { onConflict: 'user_id' })
       }
-    } catch (e) {
+    } catch {
       // Silently fail - localStorage is the primary source
     }
   }
