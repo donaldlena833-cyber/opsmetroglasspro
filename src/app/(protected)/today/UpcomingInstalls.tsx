@@ -3,13 +3,14 @@
 import { useRouter } from 'next/navigation'
 import { Calendar, ChevronRight, MapPin } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { formatRelativeDate, truncate } from '@/lib/utils'
+import { formatCurrency, formatRelativeDate, truncate } from '@/lib/utils'
 
 interface UpcomingInstallsProps {
   installs: any[]
+  totalValue: number
 }
 
-export function UpcomingInstalls({ installs }: UpcomingInstallsProps) {
+export function UpcomingInstalls({ installs, totalValue }: UpcomingInstallsProps) {
   const router = useRouter()
 
   return (
@@ -26,9 +27,14 @@ export function UpcomingInstalls({ installs }: UpcomingInstallsProps) {
             <p className="text-xs text-navy-400 dark:text-dark-muted">What is coming up in the next week.</p>
           </div>
         </div>
-        <span className="pill-badge bg-navy-50 text-navy-700 dark:bg-navy-900/20 dark:text-navy-200">
-          {installs.length}
-        </span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <span className="pill-badge bg-cream-100 text-navy-700 dark:bg-dark-border dark:text-dark-text">
+            {formatCurrency(totalValue)}
+          </span>
+          <span className="pill-badge bg-navy-50 text-navy-700 dark:bg-navy-900/20 dark:text-navy-200">
+            {installs.length}
+          </span>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -67,6 +73,12 @@ export function UpcomingInstalls({ installs }: UpcomingInstallsProps) {
                   <MapPin className="h-3.5 w-3.5" />
                   <span className="truncate">{truncate(install.address, 42)}</span>
                 </div>
+
+                <p className="mt-3 text-sm font-medium text-navy-700 dark:text-orange-300">
+                  {install.total_invoice_value > 0
+                    ? `${formatCurrency(install.total_invoice_value)} registered`
+                    : 'No invoice value registered yet'}
+                </p>
               </div>
 
               <ChevronRight className="mt-2 h-5 w-5 shrink-0 text-navy-300 dark:text-dark-muted" />

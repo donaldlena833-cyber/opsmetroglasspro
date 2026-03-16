@@ -37,7 +37,8 @@ async function getDashboardData() {
       *,
       clients (name),
       payments (id, payment_type),
-      expenses (id, category)
+      expenses (id, category),
+      invoices (id, total)
     `)
     .neq('status', 'closed')
     .order('created_at', { ascending: false })
@@ -51,7 +52,8 @@ async function getDashboardData() {
       install_date,
       install_end_date,
       status,
-      clients (name)
+      clients (name),
+      invoices (id, total)
     `)
     .neq('status', 'closed')
     .gte('install_date', format(now, 'yyyy-MM-dd'))
@@ -160,6 +162,16 @@ export default async function TodayPage() {
   const greeting = getGreeting()
   const displayName = data.userName.charAt(0).toUpperCase() + data.userName.slice(1)
   const activeJobCount = data.jobsForAttention.length
+  const activeRegisteredValue = data.jobsForAttention.reduce((sum, job) => {
+    const jobValue = job.invoices?.reduce((invoiceSum: number, invoice: any) => invoiceSum + Number(invoice.total || 0), 0) || 0
+    return sum + jobValue
+  }, 0)
+  const upcomingInstalls = data.upcomingInstalls.map((install) => ({
+    ...install,
+    total_invoice_value:
+      install.invoices?.reduce((sum: number, invoice: any) => sum + Number(invoice.total || 0), 0) || 0,
+  }))
+  const upcomingInstallValue = upcomingInstalls.reduce((sum, install) => sum + Number(install.total_invoice_value || 0), 0)
 
   return (
     <div className="page-container safe-top">
@@ -213,9 +225,9 @@ export default async function TodayPage() {
               <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Currently active</p>
             </Card>
             <Card className="p-4">
-              <p className="stat-label">Due Soon</p>
-              <p className="stat-value">{data.reminders.length}</p>
-              <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Reminders in the next 3 days</p>
+              <p className="stat-label">Registered Value</p>
+              <p className="stat-value">{formatCurrency(activeRegisteredValue)}</p>
+              <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Across active jobs</p>
             </Card>
           </div>
         </div>
@@ -275,10 +287,12 @@ export default async function TodayPage() {
           <ReminderBanners reminders={data.reminders} />
         </section>
       )}
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div>
           {jobsNeedingAttention.length > 0 && <JobsAttention jobs={jobsNeedingAttention} />}
-          {data.upcomingInstalls.length > 0 && <UpcomingInstalls installs={data.upcomingInstalls} />}
+          {upcomingInstalls.length > 0 && (
+            <UpcomingInstalls installs={upcomingInstalls} totalValue={upcomingInstallValue} />
+          )}
         </div>
 
         <div>

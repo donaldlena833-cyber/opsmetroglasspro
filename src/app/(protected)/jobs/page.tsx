@@ -24,7 +24,17 @@ async function getJobs() {
 
   if (error) {
     console.error('Error fetching jobs:', error)
-    return { jobs: [], totals: { totalRevenue: 0, totalExpenses: 0, totalNet: 0, activeJobs: 0 } }
+    return {
+      jobs: [],
+      totals: {
+        totalRevenue: 0,
+        totalExpenses: 0,
+        totalNet: 0,
+        activeJobs: 0,
+        totalRegisteredValue: 0,
+        totalScheduledValue: 0,
+      },
+    }
   }
 
   const mappedJobs = (jobs || []).map(job => ({
@@ -37,11 +47,14 @@ async function getJobs() {
 
   // Calculate global totals from active (non-closed) jobs
   const activeJobs = mappedJobs.filter(j => j.status !== 'closed')
+  const scheduledJobs = activeJobs.filter((job) => !!job.install_date)
   const totals = {
     totalRevenue: mappedJobs.reduce((sum, j) => sum + j.total_revenue, 0),
     totalExpenses: mappedJobs.reduce((sum, j) => sum + j.total_expenses, 0),
     totalNet: mappedJobs.reduce((sum, j) => sum + (j.total_revenue - j.total_expenses), 0),
     activeJobs: activeJobs.length,
+    totalRegisteredValue: mappedJobs.reduce((sum, j) => sum + j.total_invoice_value, 0),
+    totalScheduledValue: scheduledJobs.reduce((sum, job) => sum + job.total_invoice_value, 0),
   }
 
   return { jobs: mappedJobs, totals }
@@ -83,12 +96,12 @@ export default async function JobsPage() {
           {
             label: 'Scheduled Installs',
             value: scheduledInstalls.toString(),
-            hint: 'Active jobs with install dates',
+            hint: `${formatCurrency(totals.totalScheduledValue)} on the calendar`,
           },
           {
-            label: 'Tracked Revenue',
-            value: formatCurrency(totals.totalRevenue),
-            hint: 'Payments recorded across all jobs',
+            label: 'Registered Value',
+            value: formatCurrency(totals.totalRegisteredValue),
+            hint: 'Invoice totals across all jobs',
           },
           {
             label: 'Tracked Net',

@@ -33,7 +33,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface JobsListProps {
   initialJobs: (JobWithClient & { total_invoice_value: number; invoice_count: number; total_revenue: number; total_expenses: number })[]
-  totals: { totalRevenue: number; totalExpenses: number; totalNet: number; activeJobs: number }
+  totals: {
+    totalRevenue: number
+    totalExpenses: number
+    totalNet: number
+    activeJobs: number
+    totalRegisteredValue: number
+    totalScheduledValue: number
+  }
 }
 
 type FilterType = 'all' | 'active' | 'closed' | 'archived'
@@ -148,9 +155,10 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
         }
 
         summary.net += job.total_revenue - job.total_expenses
+        summary.registeredValue += job.total_invoice_value
         return summary
       },
-      { scheduled: 0, attention: 0, net: 0 }
+      { scheduled: 0, attention: 0, net: 0, registeredValue: 0 }
     )
   }, [filteredJobs])
 
@@ -235,7 +243,7 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/70">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
                   In View
@@ -250,6 +258,14 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
               </div>
               <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/70">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
+                  Registered
+                </p>
+                <p className="mt-2 text-lg font-semibold text-navy-800 dark:text-dark-text">
+                  {formatCurrency(visibleSummary.registeredValue)}
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/70">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy-500 dark:text-dark-muted">
                   Attention
                 </p>
                 <p className="mt-2 text-lg font-semibold text-navy-800 dark:text-dark-text">{visibleSummary.attention}</p>
@@ -261,7 +277,7 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
                 {formatCurrency(visibleSummary.net)} net across the current view
               </span>
               <span>
-                {formatCurrency(totals.totalExpenses)} tracked costs overall
+                {formatCurrency(totals.totalRegisteredValue)} registered overall
               </span>
             </div>
           </div>
