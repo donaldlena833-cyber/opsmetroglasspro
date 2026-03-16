@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
 
     if (!secretKey) {
       return NextResponse.json(
-        { error: 'Missing STRIPE_SECRET_KEY in Vercel. Add it before creating payment links.' },
+        { error: 'Missing Stripe server key in Vercel. Add STRIPE_SECRET_KEY, STRIPE_SECRET, or STRIPE_API_KEY before creating payment links.' },
+        { status: 503 }
+      )
+    }
+
+    if (secretKey.startsWith('pk_')) {
+      return NextResponse.json(
+        { error: 'Stripe publishable key detected. Use the server secret key that starts with sk_live_ or sk_test_.' },
         { status: 503 }
       )
     }

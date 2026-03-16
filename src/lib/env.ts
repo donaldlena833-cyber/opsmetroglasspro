@@ -7,7 +7,11 @@ const envValues = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  STRIPE_SECRET: process.env.STRIPE_SECRET,
+  STRIPE_API_KEY: process.env.STRIPE_API_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  STRIPE_SIGNING_SECRET: process.env.STRIPE_SIGNING_SECRET,
+  STRIPE_ENDPOINT_SECRET: process.env.STRIPE_ENDPOINT_SECRET,
 } as const
 
 function getFirstAvailableEnv(name: string, fallbacks: string[] = []) {
@@ -15,8 +19,9 @@ function getFirstAvailableEnv(name: string, fallbacks: string[] = []) {
 
   for (const candidate of candidates) {
     const value = envValues[candidate as keyof typeof envValues]
-    if (value) {
-      return value
+    const normalizedValue = typeof value === 'string' ? value.trim() : value
+    if (normalizedValue) {
+      return normalizedValue
     }
   }
 
@@ -54,7 +59,7 @@ export function getServiceSupabaseEnv() {
 
 export function getStripeEnv() {
   return {
-    secretKey: getOptionalEnv('STRIPE_SECRET_KEY'),
-    webhookSecret: getOptionalEnv('STRIPE_WEBHOOK_SECRET'),
+    secretKey: getOptionalEnv('STRIPE_SECRET_KEY', ['STRIPE_SECRET', 'STRIPE_API_KEY']),
+    webhookSecret: getOptionalEnv('STRIPE_WEBHOOK_SECRET', ['STRIPE_SIGNING_SECRET', 'STRIPE_ENDPOINT_SECRET']),
   }
 }

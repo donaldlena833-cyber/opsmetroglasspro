@@ -114,7 +114,14 @@ export async function POST(request: NextRequest) {
 
   if (!secretKey || !webhookSecret) {
     return NextResponse.json(
-      { error: 'Missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET.' },
+      { error: 'Missing Stripe server key or webhook secret. Add STRIPE_SECRET_KEY/STRIPE_SECRET/STRIPE_API_KEY and STRIPE_WEBHOOK_SECRET/STRIPE_SIGNING_SECRET.' },
+      { status: 500 }
+    )
+  }
+
+  if (secretKey.startsWith('pk_')) {
+    return NextResponse.json(
+      { error: 'Stripe publishable key detected. The webhook needs the server secret key that starts with sk_live_ or sk_test_.' },
       { status: 500 }
     )
   }
