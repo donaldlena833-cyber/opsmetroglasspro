@@ -32,7 +32,13 @@ import { addMonths, isBefore } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface JobsListProps {
-  initialJobs: (JobWithClient & { total_invoice_value: number; invoice_count: number; total_revenue: number; total_expenses: number })[]
+  initialJobs: (JobWithClient & {
+    total_invoice_value: number
+    invoice_count: number
+    total_revenue: number
+    total_expenses: number
+    registered_job_value: number
+  })[]
   totals: {
     totalRevenue: number
     totalExpenses: number
@@ -155,7 +161,7 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
         }
 
         summary.net += job.total_revenue - job.total_expenses
-        summary.registeredValue += job.total_invoice_value
+        summary.registeredValue += job.registered_job_value
         return summary
       },
       { scheduled: 0, attention: 0, net: 0, registeredValue: 0 }
@@ -416,9 +422,9 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-navy-400 dark:text-dark-muted">
                         <span>Updated {formatRelativeDate(job.updated_at)}</span>
                         <span>
-                          {job.total_invoice_value > 0
-                            ? `${formatCurrency(job.total_invoice_value)} invoiced`
-                            : 'No invoices yet'}
+                          {job.registered_job_value > 0
+                            ? `${formatCurrency(job.registered_job_value)} registered`
+                            : 'No value yet'}
                         </span>
                       </div>
                     </div>

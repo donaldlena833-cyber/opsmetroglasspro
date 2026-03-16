@@ -3,12 +3,17 @@ import { createClient } from '@supabase/supabase-js'
 import { jsPDF } from 'jspdf'
 import { format } from 'date-fns'
 import { getServiceSupabaseEnv } from '@/lib/env'
+import { buildJobInvoiceDescription } from '@/lib/invoice-builder'
 
 interface LineItem {
   description: string
   qty: number
   unit_price: number
   line_total: number
+}
+
+function formatMoney(value: number) {
+  return `$${Number(value).toFixed(2)}`
 }
 
 export async function POST(request: NextRequest) {
@@ -24,7 +29,19 @@ export async function POST(request: NextRequest) {
 
     const { data: invoice, error } = await supabase
       .from('invoices')
-      .select(`*, jobs (job_name, address)`)
+      .select(`
+        *,
+        jobs (
+          job_name,
+          address,
+          scope_of_work,
+          configuration,
+          dimensions,
+          glass_type,
+          glass_thickness,
+          hardware_finish
+        )
+      `)
       .eq('id', invoiceId)
       .single()
 
@@ -33,171 +50,232 @@ export async function POST(request: NextRequest) {
     }
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
     const pageWidth = doc.internal.pageSize.getWidth()
-    const margin = 20
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 16
     const contentWidth = pageWidth - margin * 2
-    let yPos = margin
 
-    const navyColor = '#1B2B5A'
-    const orangeColor = '#F5A623'
-    const grayColor = '#6B7280'
+    const charcoal = '#2D2926'
+    const cream = '#F7F2EA'
+    const bronze = '#B88A52'
+    const sand = '#E9DECF'
+    const muted = '#70665D'
 
-    doc.setFontSize(24)
-    doc.setTextColor(navyColor)
-    doc.setFont('helvetica', 'bold')
-    doc.text('MetroGlass', margin, yPos)
-    doc.setTextColor(orangeColor)
-    doc.text('Pro', margin + 46, yPos)
-    
-    yPos += 8
-    doc.setFontSize(9)
-    doc.setTextColor(grayColor)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Custom Shower Glass Installation', margin, yPos)
-    
-    yPos += 5
-    doc.text('operations@metroglasspro.com', margin, yPos)
-    doc.text('Phone: 332-999-3846 | 646-520-5412', margin, yPos + 4)
+    let yPos = 0
 
-    doc.setFontSize(28)
-    doc.setTextColor(navyColor)
-    doc.setFont('helvetica', 'bold')
-    doc.text('INVOICE', pageWidth - margin, margin, { align: 'right' })
-    
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`#${invoice.invoice_number}`, pageWidth - margin, margin + 10, { align: 'right' })
+    const ensureSpace = (height: number) => {
+      if (yPos + height <= pageHeight - 18) return
+      doc.addPage()
+      yPos = margin
+    }
 
-    yPos += 20
+    const drawInfoCard = (x: number, y: number, width: number, title: string, lines: string[]) => {
+      doc.setFillColor(247, 242, 234)
+      doc.roundedRect(x, y, width, 30, 4, 4, 'F')
+      doc.setDrawColor(233, 222, 207)
+      doc.roundedRect(x, y, width, 30, 4, 4, 'S')
 
-    doc.setDrawColor(navyColor)
-    doc.setLineWidth(0.5)
-    doc.line(margin, yPos, pageWidth - margin, yPos)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(bronze)
+      doc.text(title.toUpperCase(), x + 4, y + 6)
 
-    yPos += 10
-
-    doc.setFontSize(9)
-    doc.setTextColor(grayColor)
-    doc.text('Invoice Date', margin, yPos)
-    doc.text('Due Date', margin + 50, yPos)
-    
-    yPos += 5
-    doc.setTextColor(navyColor)
-    doc.setFont('helvetica', 'bold')
-    doc.text(format(new Date(invoice.invoice_date), 'MMM d, yyyy'), margin, yPos)
-    doc.text(format(new Date(invoice.due_date), 'MMM d, yyyy'), margin + 50, yPos)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(grayColor)
-    doc.text('Bill To', pageWidth - margin - 70, yPos - 5, { align: 'left' })
-    
-    doc.setTextColor(navyColor)
-    doc.setFont('helvetica', 'bold')
-    doc.text(invoice.customer_name, pageWidth - margin - 70, yPos)
-    
-    if (invoice.customer_address) {
       doc.setFont('helvetica', 'normal')
-      const addressLines = invoice.customer_address.split('\n')
-      addressLines.forEach((line: string, i: number) => {
-        doc.text(line, pageWidth - margin - 70, yPos + 5 + (i * 4))
+      doc.setFontSize(10)
+      doc.setTextColor(charcoal)
+
+      let lineY = y + 12
+      lines.forEach((line) => {
+        if (!line) return
+        const wrapped = doc.splitTextToSize(line, width - 8)
+        doc.text(wrapped, x + 4, lineY)
+        lineY += wrapped.length * 4.2
       })
     }
 
-    yPos += 25
+    const headerHeight = 48
+    doc.setFillColor(247, 242, 234)
+    doc.rect(0, 0, pageWidth, headerHeight, 'F')
+    doc.setDrawColor(184, 138, 82)
+    doc.setLineWidth(0.7)
+    doc.line(0, headerHeight, pageWidth, headerHeight)
 
-    doc.setFillColor(27, 43, 90)
-    doc.rect(margin, yPos, contentWidth, 8, 'F')
-    
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
-    doc.text('Description', margin + 3, yPos + 5.5)
-    doc.text('Qty', margin + 100, yPos + 5.5)
-    doc.text('Price', margin + 120, yPos + 5.5)
-    doc.text('Amount', pageWidth - margin - 3, yPos + 5.5, { align: 'right' })
+    doc.setFontSize(24)
+    doc.setTextColor(charcoal)
+    doc.text('MetroGlass Pro', margin, 18)
 
-    yPos += 12
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(muted)
+    doc.text('Custom shower glass installations', margin, 24)
+    doc.text('operations@metroglasspro.com', margin, 29)
+    doc.text('332-999-3846 • 646-520-5412', margin, 34)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(28)
+    doc.setTextColor(charcoal)
+    doc.text('INVOICE', pageWidth - margin, 18, { align: 'right' })
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(bronze)
+    doc.text(`#${invoice.invoice_number}`, pageWidth - margin, 25, { align: 'right' })
+    doc.setTextColor(muted)
+    doc.text(`Created ${format(new Date(invoice.invoice_date), 'MMM d, yyyy')}`, pageWidth - margin, 31, { align: 'right' })
+
+    yPos = headerHeight + 10
+
+    const job = Array.isArray(invoice.jobs) ? invoice.jobs[0] : invoice.jobs
+    const projectSummary = job ? buildJobInvoiceDescription(job) : null
+
+    drawInfoCard(margin, yPos, 88, 'Bill To', [
+      invoice.customer_name,
+      invoice.customer_address || '',
+    ])
+
+    drawInfoCard(pageWidth - margin - 88, yPos, 88, 'Invoice Details', [
+      `Invoice Date: ${format(new Date(invoice.invoice_date), 'MMM d, yyyy')}`,
+      `Due Date: ${format(new Date(invoice.due_date), 'MMM d, yyyy')}`,
+      job?.job_name ? `Project: ${job.job_name}` : '',
+    ])
+
+    yPos += 38
+
+    if (projectSummary || job?.address) {
+      ensureSpace(24)
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(margin, yPos, contentWidth, 22, 4, 4, 'F')
+      doc.setDrawColor(233, 222, 207)
+      doc.roundedRect(margin, yPos, contentWidth, 22, 4, 4, 'S')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(bronze)
+      doc.text('PROJECT SUMMARY', margin + 4, yPos + 6)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(charcoal)
+      const summaryLines = [
+        projectSummary || '',
+        job?.address ? `Site Address: ${job.address}` : '',
+      ].filter(Boolean)
+      doc.text(doc.splitTextToSize(summaryLines.join(' • '), contentWidth - 8), margin + 4, yPos + 12)
+      yPos += 28
+    }
 
     const lineItems = invoice.line_items_json as LineItem[]
-    doc.setTextColor(navyColor)
-    doc.setFont('helvetica', 'normal')
-    
+
+    ensureSpace(16)
+    doc.setFillColor(45, 41, 38)
+    doc.roundedRect(margin, yPos, contentWidth, 10, 3, 3, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(247, 242, 234)
+    doc.text('Description', margin + 4, yPos + 6.5)
+    doc.text('Qty', margin + 110, yPos + 6.5)
+    doc.text('Unit', margin + 130, yPos + 6.5)
+    doc.text('Amount', pageWidth - margin - 4, yPos + 6.5, { align: 'right' })
+    yPos += 12
+
     lineItems.forEach((item, index) => {
+      const descLines = doc.splitTextToSize(item.description, 100)
+      const rowHeight = Math.max(10, descLines.length * 4.5 + 4)
+      ensureSpace(rowHeight + 2)
+
       if (index % 2 === 0) {
-        doc.setFillColor(247, 241, 230)
-        doc.rect(margin, yPos - 4, contentWidth, 8, 'F')
+        doc.setFillColor(247, 242, 234)
+        doc.roundedRect(margin, yPos - 2, contentWidth, rowHeight, 2, 2, 'F')
       }
-      
-      doc.text(item.description.substring(0, 50), margin + 3, yPos)
-      doc.text(item.qty.toString(), margin + 100, yPos)
-      doc.text(`$${item.unit_price.toFixed(2)}`, margin + 120, yPos)
-      doc.text(`$${item.line_total.toFixed(2)}`, pageWidth - margin - 3, yPos, { align: 'right' })
-      
-      yPos += 8
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(charcoal)
+      doc.text(descLines, margin + 4, yPos + 2)
+      doc.text(String(item.qty), margin + 112, yPos + 2)
+      doc.text(formatMoney(item.unit_price), margin + 130, yPos + 2)
+      doc.text(formatMoney(item.line_total), pageWidth - margin - 4, yPos + 2, { align: 'right' })
+      yPos += rowHeight + 2
     })
 
-    yPos += 5
-
-    const totalsX = pageWidth - margin - 60
-    
-    doc.setDrawColor(200, 200, 200)
-    doc.line(totalsX, yPos, pageWidth - margin, yPos)
-    yPos += 6
+    ensureSpace(46)
+    const totalsX = pageWidth - margin - 64
+    doc.setFillColor(247, 242, 234)
+    doc.roundedRect(totalsX, yPos + 2, 64, 34, 4, 4, 'F')
+    doc.setDrawColor(233, 222, 207)
+    doc.roundedRect(totalsX, yPos + 2, 64, 34, 4, 4, 'S')
 
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(grayColor)
-    doc.text('Subtotal', totalsX, yPos)
-    doc.setTextColor(navyColor)
-    doc.text(`$${Number(invoice.subtotal).toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' })
-    yPos += 6
+    doc.setFontSize(9)
+    doc.setTextColor(muted)
+    doc.text('Subtotal', totalsX + 4, yPos + 10)
+    doc.setTextColor(charcoal)
+    doc.text(formatMoney(Number(invoice.subtotal)), totalsX + 60, yPos + 10, { align: 'right' })
 
-    if (invoice.discount_applied && invoice.discount_amount > 0) {
-      doc.setTextColor(grayColor)
-      doc.text(`Discount (${invoice.discount_percent}%)`, totalsX, yPos)
-      doc.setTextColor('#DC2626')
-      doc.text(`-$${Number(invoice.discount_amount).toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' })
-      yPos += 6
+    let totalsLineY = yPos + 16
+    if (invoice.discount_applied && Number(invoice.discount_amount) > 0) {
+      doc.setTextColor(muted)
+      doc.text(`Discount (${invoice.discount_percent}%)`, totalsX + 4, totalsLineY)
+      doc.setTextColor('#B42318')
+      doc.text(`-${formatMoney(Number(invoice.discount_amount))}`, totalsX + 60, totalsLineY, { align: 'right' })
+      totalsLineY += 6
     }
 
-    if (invoice.tax_applied && invoice.tax > 0) {
-      doc.setTextColor(grayColor)
-      doc.text(`Tax (${invoice.tax_rate}%)`, totalsX, yPos)
-      doc.setTextColor(navyColor)
-      doc.text(`$${Number(invoice.tax).toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' })
-      yPos += 6
+    if (invoice.tax_applied && Number(invoice.tax) > 0) {
+      doc.setTextColor(muted)
+      doc.text(`Tax (${invoice.tax_rate}%)`, totalsX + 4, totalsLineY)
+      doc.setTextColor(charcoal)
+      doc.text(formatMoney(Number(invoice.tax)), totalsX + 60, totalsLineY, { align: 'right' })
+      totalsLineY += 6
     }
 
-    doc.setDrawColor(navyColor)
-    doc.line(totalsX, yPos, pageWidth - margin, yPos)
-    yPos += 8
-    
+    doc.setDrawColor(184, 138, 82)
+    doc.line(totalsX + 4, totalsLineY + 1, totalsX + 60, totalsLineY + 1)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(navyColor)
-    doc.text('TOTAL', totalsX, yPos)
-    doc.text(`$${Number(invoice.total).toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' })
+    doc.setFontSize(11)
+    doc.setTextColor(charcoal)
+    doc.text('TOTAL', totalsX + 4, totalsLineY + 7)
+    doc.text(formatMoney(Number(invoice.total)), totalsX + 60, totalsLineY + 7, { align: 'right' })
 
-    yPos += 20
+    yPos = Math.max(yPos + 4, totalsLineY + 14)
 
-    if (invoice.notes) {
-      doc.setFontSize(9)
+    const notesBlocks = [
+      invoice.notes ? { title: 'Notes & Terms', body: invoice.notes } : null,
+      job?.scope_of_work ? { title: 'Scope of Work', body: job.scope_of_work } : null,
+    ].filter(Boolean) as { title: string; body: string }[]
+
+    notesBlocks.forEach((block) => {
+      const wrapped = doc.splitTextToSize(block.body, contentWidth - 8)
+      const blockHeight = Math.max(18, wrapped.length * 4.5 + 10)
+      ensureSpace(blockHeight + 4)
+
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(margin, yPos, contentWidth, blockHeight, 4, 4, 'F')
+      doc.setDrawColor(233, 222, 207)
+      doc.roundedRect(margin, yPos, contentWidth, blockHeight, 4, 4, 'S')
+
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(grayColor)
-      doc.text('Notes', margin, yPos)
-      yPos += 5
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(navyColor)
-      
-      const noteLines = doc.splitTextToSize(invoice.notes, contentWidth)
-      doc.text(noteLines, margin, yPos)
-    }
+      doc.setFontSize(8)
+      doc.setTextColor(bronze)
+      doc.text(block.title.toUpperCase(), margin + 4, yPos + 6)
 
-    const footerY = doc.internal.pageSize.getHeight() - 15
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(charcoal)
+      doc.text(wrapped, margin + 4, yPos + 12)
+
+      yPos += blockHeight + 4
+    })
+
+    const footerY = pageHeight - 14
+    doc.setDrawColor(233, 222, 207)
+    doc.line(margin, footerY - 6, pageWidth - margin, footerY - 6)
+    doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.setTextColor(grayColor)
-    doc.text('Thank you for your business!', pageWidth / 2, footerY, { align: 'center' })
-    doc.text('MetroGlass Pro Inc • NYC/NJ/CT', pageWidth / 2, footerY + 4, { align: 'center' })
+    doc.setTextColor(muted)
+    doc.text('MetroGlass Pro Inc • NYC / NJ / CT', margin, footerY)
+    doc.text('Thank you for your business.', pageWidth - margin, footerY, { align: 'right' })
 
     const pdfBuffer = doc.output('arraybuffer')
 
@@ -214,9 +292,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload PDF' }, { status: 500 })
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('invoices')
-      .getPublicUrl(fileName)
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('invoices').getPublicUrl(fileName)
 
     await supabase
       .from('invoices')

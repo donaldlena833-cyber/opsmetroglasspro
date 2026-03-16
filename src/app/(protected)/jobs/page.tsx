@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHero } from '@/components/PageHero'
+import { getRegisteredJobValue } from '@/lib/invoice-builder'
 import { formatCurrency } from '@/lib/utils'
 import { JobsList } from './JobsList'
 
@@ -43,6 +44,10 @@ async function getJobs() {
     invoice_count: job.invoices?.length || 0,
     total_revenue: job.payments?.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0) || 0,
     total_expenses: job.expenses?.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) || 0,
+    registered_job_value: getRegisteredJobValue(
+      job.quoted_price,
+      job.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0) || 0
+    ),
   }))
 
   // Calculate global totals from active (non-closed) jobs
@@ -53,8 +58,8 @@ async function getJobs() {
     totalExpenses: mappedJobs.reduce((sum, j) => sum + j.total_expenses, 0),
     totalNet: mappedJobs.reduce((sum, j) => sum + (j.total_revenue - j.total_expenses), 0),
     activeJobs: activeJobs.length,
-    totalRegisteredValue: mappedJobs.reduce((sum, j) => sum + j.total_invoice_value, 0),
-    totalScheduledValue: scheduledJobs.reduce((sum, job) => sum + job.total_invoice_value, 0),
+    totalRegisteredValue: mappedJobs.reduce((sum, j) => sum + j.registered_job_value, 0),
+    totalScheduledValue: scheduledJobs.reduce((sum, job) => sum + job.registered_job_value, 0),
   }
 
   return { jobs: mappedJobs, totals }

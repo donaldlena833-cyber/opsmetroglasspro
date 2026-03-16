@@ -44,6 +44,9 @@ import {
   formatCurrency,
   formatDate,
   formatDateShort,
+  glassThicknessConfig,
+  glassTypeConfig,
+  hardwareFinishConfig,
   jobStatusConfig,
   expenseCategoryConfig,
   paymentMethodConfig,
@@ -52,7 +55,8 @@ import {
   calculateJobNet,
   cn,
 } from '@/lib/utils'
-import { JobWithRelations, JobStatus, PaymentMethod, PaymentType, ExpenseCategory } from '@/lib/supabase/types'
+import { ExpenseCategory, GlassThickness, GlassType, HardwareFinish, JobStatus, JobWithRelations, PaymentMethod, PaymentType } from '@/lib/supabase/types'
+import { getRegisteredJobValue } from '@/lib/invoice-builder'
 
 interface JobDetailProps {
   job: JobWithRelations
@@ -74,12 +78,25 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
 
   // Edit form state
   const [editStatus, setEditStatus] = useState<JobStatus>(job.status)
+  const [editJobName, setEditJobName] = useState(job.job_name)
+  const [editAddress, setEditAddress] = useState(job.address)
+  const [editArea, setEditArea] = useState(job.area || '')
   const [editInstallDate, setEditInstallDate] = useState(job.install_date || '')
   const [editInstallEndDate, setEditInstallEndDate] = useState(job.install_end_date || '')
   const [editNotes, setEditNotes] = useState(job.notes || '')
+  const [editQuotedPrice, setEditQuotedPrice] = useState(job.quoted_price?.toString() || '')
+  const [editDepositAmount, setEditDepositAmount] = useState(job.deposit_amount?.toString() || '')
+  const [editScopeOfWork, setEditScopeOfWork] = useState(job.scope_of_work || '')
+  const [editGlassType, setEditGlassType] = useState<GlassType | ''>(job.glass_type || '')
+  const [editGlassThickness, setEditGlassThickness] = useState<GlassThickness | ''>(job.glass_thickness || '')
+  const [editHardwareFinish, setEditHardwareFinish] = useState<HardwareFinish | ''>(job.hardware_finish || '')
+  const [editConfiguration, setEditConfiguration] = useState(job.configuration || '')
+  const [editDimensions, setEditDimensions] = useState(job.dimensions || '')
 
   const statusConfig = jobStatusConfig[job.status]
   const { revenue, costs, net } = calculateJobNet(job.payments || [], job.expenses || [])
+  const invoicedTotal = (job.invoices || []).reduce((sum, invoice) => sum + Number(invoice.total || 0), 0)
+  const registeredValue = getRegisteredJobValue(job.quoted_price, invoicedTotal)
 
   const handleStatusChange = async (newStatus: JobStatus) => {
     const { error } = await supabase
@@ -99,13 +116,53 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
 
   const handleSaveEdit = async () => {
     setSaving(true)
+    const parsedQuotedPrice = editQuotedPrice ? Number(editQuotedPrice) : null
+    const parsedDepositAmount = editDepositAmount ? Number(editDepositAmount) : null
+
+    if (parsedQuotedPrice !== null && Number.isNaN(parsedQuotedPrice)) {
+      toast({ title: 'Error', description: 'Quoted price must be a valid number', variant: 'destructive' })
+      setSaving(false)
+      return
+    }
+
+    if (parsedDepositAmount !== null && Number.isNaN(parsedDepositAmount)) {
+      toast({ title: 'Error', description: 'Deposit amount must be a valid number', variant: 'destructive' })
+      setSaving(false)
+      return
+    }
+
+    if (
+      parsedQuotedPrice !== null &&
+      parsedDepositAmount !== null &&
+      parsedDepositAmount > parsedQuotedPrice
+    ) {
+      toast({
+        title: 'Error',
+        description: 'Deposit amount cannot be higher than the quoted price',
+        variant: 'destructive',
+      })
+      setSaving(false)
+      return
+    }
+
     const { error } = await supabase
       .from('jobs')
       .update({
+        job_name: editJobName,
+        address: editAddress,
+        area: editArea || null,
         status: editStatus,
         install_date: editInstallDate || null,
         install_end_date: editInstallEndDate || null,
         notes: editNotes || null,
+        quoted_price: parsedQuotedPrice,
+        deposit_amount: parsedDepositAmount,
+        scope_of_work: editScopeOfWork || null,
+        glass_type: editGlassType || null,
+        glass_thickness: editGlassThickness || null,
+        hardware_finish: editHardwareFinish || null,
+        configuration: editConfiguration || null,
+        dimensions: editDimensions || null,
       })
       .eq('id', job.id)
 
@@ -117,10 +174,21 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
 
     setJob({
       ...job,
+      job_name: editJobName,
+      address: editAddress,
+      area: editArea || null,
       status: editStatus,
       install_date: editInstallDate || null,
       install_end_date: editInstallEndDate || null,
       notes: editNotes || null,
+      quoted_price: parsedQuotedPrice,
+      deposit_amount: parsedDepositAmount,
+      scope_of_work: editScopeOfWork || null,
+      glass_type: editGlassType || null,
+      glass_thickness: editGlassThickness || null,
+      hardware_finish: editHardwareFinish || null,
+      configuration: editConfiguration || null,
+      dimensions: editDimensions || null,
     })
     setSaving(false)
     toast({ title: 'Saved', description: 'Job details updated', variant: 'success' })
@@ -243,17 +311,21 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
         </div>
       </div>
 
-      {/* Net Profit Card */}
+      {/* Value Summary */}
       <Card className="mb-4">
         <CardContent className="py-4">
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
             <div>
-              <p className="text-xs text-gray-500">Revenue</p>
-              <p className="text-lg font-bold text-green-600">{formatCurrency(revenue)}</p>
+              <p className="text-xs text-gray-500">Planned</p>
+              <p className="text-lg font-bold text-navy-800">{formatCurrency(Number(job.quoted_price || 0))}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Costs</p>
-              <p className="text-lg font-bold text-red-600">{formatCurrency(costs)}</p>
+              <p className="text-xs text-gray-500">Registered</p>
+              <p className="text-lg font-bold text-orange-600">{formatCurrency(registeredValue)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Collected</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(revenue)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Net</p>
@@ -288,6 +360,24 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
         <Tabs.Content value="overview" className="space-y-4">
           <Card>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-3">
+                <Input
+                  label="Job Name"
+                  value={editJobName}
+                  onChange={(e) => setEditJobName(e.target.value)}
+                />
+                <Input
+                  label="Address"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                />
+                <Input
+                  label="Area"
+                  value={editArea}
+                  onChange={(e) => setEditArea(e.target.value)}
+                />
+              </div>
+
               <Select value={editStatus} onValueChange={(v) => handleStatusChange(v as JobStatus)}>
                 <SelectTrigger label="Status">
                   <SelectValue />
@@ -324,9 +414,117 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                 rows={4}
               />
 
-              <Button onClick={handleSaveEdit} loading={saving} className="w-full">
-                Save Changes
-              </Button>
+              <div className="rounded-[24px] border border-cream-200 bg-cream-50/80 p-4 dark:border-dark-border dark:bg-dark-border/60">
+                <p className="text-sm font-semibold text-navy-800 dark:text-dark-text">Pricing & Invoice Defaults</p>
+                <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">
+                  These values feed the smart invoice generator so you can build invoices from the job without retyping everything.
+                </p>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    label="Quoted Total"
+                    value={editQuotedPrice}
+                    onChange={(e) => setEditQuotedPrice(e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    label="Suggested Deposit"
+                    value={editDepositAmount}
+                    onChange={(e) => setEditDepositAmount(e.target.value)}
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <Textarea
+                    label="Scope of Work"
+                    placeholder="Frameless shower enclosure, inline panel, matte black hardware..."
+                    value={editScopeOfWork}
+                    onChange={(e) => setEditScopeOfWork(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-cream-200 bg-white/80 p-4 dark:border-dark-border dark:bg-dark-bg/50">
+                <p className="text-sm font-semibold text-navy-800 dark:text-dark-text">Specifications</p>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Select value={editGlassType} onValueChange={(value) => setEditGlassType(value as GlassType)}>
+                    <SelectTrigger label="Glass Type">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(glassTypeConfig).map(([value, config]) => (
+                        <SelectItem key={value} value={value}>
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={editGlassThickness} onValueChange={(value) => setEditGlassThickness(value as GlassThickness)}>
+                    <SelectTrigger label="Thickness">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(glassThicknessConfig).map(([value, config]) => (
+                        <SelectItem key={value} value={value}>
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={editHardwareFinish} onValueChange={(value) => setEditHardwareFinish(value as HardwareFinish)}>
+                    <SelectTrigger label="Hardware Finish">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(hardwareFinishConfig).map(([value, config]) => (
+                        <SelectItem key={value} value={value}>
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    label="Configuration"
+                    placeholder="Inline door + panel"
+                    value={editConfiguration}
+                    onChange={(e) => setEditConfiguration(e.target.value)}
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <Input
+                    label="Dimensions"
+                    placeholder="72 x 36, 84 high..."
+                    value={editDimensions}
+                    onChange={(e) => setEditDimensions(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Button onClick={handleSaveEdit} loading={saving} className="w-full">
+                  Save Changes
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push(`/invoices/new?jobId=${job.id}`)}
+                  className="w-full"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Create Smart Invoice
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </Tabs.Content>

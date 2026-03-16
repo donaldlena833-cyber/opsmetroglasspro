@@ -45,6 +45,9 @@ export default function NewJobPage() {
   const [installEndDate, setInstallEndDate] = useState('')
   const [notes, setNotes] = useState('')
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+  const [quotedPrice, setQuotedPrice] = useState('')
+  const [depositAmount, setDepositAmount] = useState('')
+  const [scopeOfWork, setScopeOfWork] = useState('')
 
   // V2: Job specifications
   const [glassType, setGlassType] = useState<GlassType | ''>('')
@@ -96,6 +99,25 @@ export default function NewJobPage() {
     setLoading(true)
 
     try {
+      const parsedQuotedPrice = quotedPrice ? Number(quotedPrice) : null
+      const parsedDepositAmount = depositAmount ? Number(depositAmount) : null
+
+      if (parsedQuotedPrice !== null && Number.isNaN(parsedQuotedPrice)) {
+        throw new Error('Quoted price must be a valid number')
+      }
+
+      if (parsedDepositAmount !== null && Number.isNaN(parsedDepositAmount)) {
+        throw new Error('Deposit amount must be a valid number')
+      }
+
+      if (
+        parsedQuotedPrice !== null &&
+        parsedDepositAmount !== null &&
+        parsedDepositAmount > parsedQuotedPrice
+      ) {
+        throw new Error('Deposit amount cannot be higher than the quoted price')
+      }
+
       let clientId = selectedClientId
 
       if (showNewClient && newClientName) {
@@ -124,6 +146,9 @@ export default function NewJobPage() {
           install_date: installDate || null,
           install_end_date: installEndDate || null,
           notes: notes || null,
+          quoted_price: parsedQuotedPrice,
+          deposit_amount: parsedDepositAmount,
+          scope_of_work: scopeOfWork || null,
           client_id: clientId,
           // V2: Job specifications
           glass_type: glassType || null,
@@ -227,6 +252,41 @@ export default function NewJobPage() {
               placeholder="Job details, client preferences, special requirements..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4">
+            <h3 className="font-semibold text-navy-800 dark:text-dark-text">Pricing & Scope</h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                label="Quoted Total"
+                placeholder="0.00"
+                value={quotedPrice}
+                onChange={(e) => setQuotedPrice(e.target.value)}
+              />
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                label="Suggested Deposit"
+                placeholder="0.00"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+              />
+            </div>
+
+            <Textarea
+              label="Scope of Work"
+              placeholder="Frameless shower enclosure with inline panel, matte black hardware, and low iron glass..."
+              value={scopeOfWork}
+              onChange={(e) => setScopeOfWork(e.target.value)}
               rows={3}
             />
           </CardContent>

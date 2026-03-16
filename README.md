@@ -55,6 +55,9 @@ Internal operations system for MetroGlass Pro Inc - a custom shower glass instal
 6. Run the latest security migration:
    - `supabase/migrations/003_security_hardening.sql`
    - This tightens RLS, fixes mutable function `search_path`, and makes reporting views use `security_invoker`.
+7. Run the job pricing migration:
+   - `supabase/migrations/004_job_pricing_and_scope.sql`
+   - This adds editable quoted totals, deposit targets, and scope-of-work fields that power the smart invoice generator.
 
 ### 2. Environment Variables
 
@@ -100,6 +103,7 @@ If upgrading an existing deployment, run the migrations in Supabase SQL Editor:
 ```sql
 -- Run this file: supabase/migrations/002_v2_enhancements.sql
 -- Then run: supabase/migrations/003_security_hardening.sql
+-- Then run: supabase/migrations/004_job_pricing_and_scope.sql
 ```
 
 ### 6. Custom Domain Setup
@@ -136,6 +140,11 @@ Access from Settings to view:
 - Open any invoice detail page to create a Stripe payment link.
 - The link amount uses the remaining invoice balance based on recorded payments.
 - The link is created on demand and can be copied or shared right from the phone.
+
+### Smart Invoicing
+- Jobs can now store a quoted total, suggested deposit, and scope of work.
+- The invoice generator can draft a full invoice, deposit request, or remaining-balance invoice from the selected job.
+- Invoices can be deleted from the invoice detail screen when you need to clean up split-billing drafts.
 
 ### Stripe Webhook
 - Stripe should post to `https://ops.metroglasspro.com/api/stripe/webhook`

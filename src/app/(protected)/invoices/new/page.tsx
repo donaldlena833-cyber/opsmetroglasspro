@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { addMonths, format } from 'date-fns'
+import { ArrowLeft, FileText, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { buildInvoiceDraftSummary, buildInvoiceLineItemsFromJob, buildInvoiceNotesFromJob, type InvoiceDraftMode } from '@/lib/invoice-builder'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -15,11 +16,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { ArrowLeft, Plus, Trash2, Search } from 'lucide-react'
 import { formatCurrency, taxRatePresets } from '@/lib/utils'
-import { Job, Client, LineItem } from '@/lib/supabase/types'
-import { addMonths, format } from 'date-fns'
+import { Client, Job, LineItem, Payment } from '@/lib/supabase/types'
+
+type JobInvoiceOption = Job & {
+  clients: Client | null
+  payments: Pick<Payment, 'amount' | 'gross_amount' | 'payment_type'>[]
+  invoices: { id: string; total: number }[]
+}
+
+function createEmptyLineItem(): LineItem {
+  return { description: '', qty: 1, unit_price: 0, line_total: 0 }
+}
+
+const invoiceModeLabels: Record<InvoiceDraftMode, string> = {
+  full: 'Full invoice',
+  deposit: 'Deposit request',
+  balance: 'Remaining balance',
+}
 
 export default function NewInvoicePage() {
   const router = useRouter()
@@ -29,20 +46,18 @@ export default function NewInvoicePage() {
   const [supabase] = useState(() => createClient())
 
   const [loading, setLoading] = useState(false)
-  const [jobs, setJobs] = useState<(Job & { clients: Client | null })[]>([])
+  const [jobs, setJobs] = useState<JobInvoiceOption[]>([])
   const [jobSearch, setJobSearch] = useState('')
   const [showJobDropdown, setShowJobDropdown] = useState(false)
+  const [invoiceMode, setInvoiceMode] = useState<InvoiceDraftMode>('full')
 
-  // Form state
   const [jobId, setJobId] = useState<string | null>(preselectedJobId)
   const [invoiceDate, setInvoiceDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [dueDate, setDueDate] = useState(format(addMonths(new Date(), 1), 'yyyy-MM-dd'))
   const [customerName, setCustomerName] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
   const [notes, setNotes] = useState('50% deposit due. Balance due upon completion of work.')
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    { description: '', qty: 1, unit_price: 0, line_total: 0 }
-  ])
+  const [lineItems, setLineItems] = useState<LineItem[]>([createEmptyLineItem()])
   const [discountApplied, setDiscountApplied] = useState(false)
   const [discountPercent, setDiscountPercent] = useState(10)
   const [taxApplied, setTaxApplied] = useState(false)
@@ -52,50 +67,64 @@ export default function NewInvoicePage() {
     async function fetchJobs() {
       const { data } = await supabase
         .from('jobs')
-        .select('*, clients(*)')
+        .select('*, clients(*), payments(amount, gross_amount, payment_type), invoices(id, total)')
         .order('created_at', { ascending: false })
-      if (data) setJobs(data)
 
-      if (preselectedJobId && data) {
-        const job = data.find(j => j.id === preselectedJobId)
+      if (!data) return
+
+      setJobs(data)
+
+      if (preselectedJobId) {
+        const job = data.find((item) => item.id === preselectedJobId)
         if (job) {
-          setJobSearch(job.job_name)
-          if (job.clients) {
-            setCustomerName(job.clients.name)
-            setCustomerAddress(job.clients.billing_address || job.address)
-          }
+          applySmartDraft(job, 'full')
         }
       }
     }
+
     fetchJobs()
   }, [preselectedJobId, supabase])
 
-  const filteredJobs = jobs.filter(j =>
-    j.job_name.toLowerCase().includes(jobSearch.toLowerCase()) ||
-    j.address.toLowerCase().includes(jobSearch.toLowerCase())
+  const selectedJob = jobs.find((job) => job.id === jobId)
+  const filteredJobs = jobs.filter((job) =>
+    job.job_name.toLowerCase().includes(jobSearch.toLowerCase()) ||
+    job.address.toLowerCase().includes(jobSearch.toLowerCase()) ||
+    job.clients?.name?.toLowerCase().includes(jobSearch.toLowerCase())
   )
 
-  const selectedJob = jobs.find(j => j.id === jobId)
-
-  // Calculate totals
   const subtotal = lineItems.reduce((sum, item) => sum + item.line_total, 0)
   const discountAmount = discountApplied ? subtotal * (discountPercent / 100) : 0
   const afterDiscount = subtotal - discountAmount
   const taxAmount = taxApplied ? afterDiscount * (taxRate / 100) : 0
   const total = afterDiscount + taxAmount
+  const draftSummary = selectedJob ? buildInvoiceDraftSummary(selectedJob) : null
+  const existingInvoiceValue = selectedJob
+    ? selectedJob.invoices.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0)
+    : 0
 
-  const handleSelectJob = (job: typeof jobs[0]) => {
+  useEffect(() => {
+    if (selectedJob) {
+      applySmartDraft(selectedJob, invoiceMode)
+    }
+  }, [invoiceMode, selectedJob])
+
+  function applySmartDraft(job: JobInvoiceOption, mode: InvoiceDraftMode) {
     setJobId(job.id)
     setJobSearch(job.job_name)
     setShowJobDropdown(false)
-    if (job.clients) {
-      setCustomerName(job.clients.name)
-      setCustomerAddress(job.clients.billing_address || job.address)
-    }
+    setCustomerName((current) => job.clients?.name || current)
+    setCustomerAddress(job.clients?.billing_address || job.address)
+    setLineItems(buildInvoiceLineItemsFromJob(job, mode))
+    setNotes(buildInvoiceNotesFromJob(job, mode))
   }
 
-  const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
+  function handleSelectJob(job: JobInvoiceOption) {
+    applySmartDraft(job, invoiceMode)
+  }
+
+  function updateLineItem(index: number, field: keyof LineItem, value: string | number) {
     const updated = [...lineItems]
+
     if (field === 'description') {
       updated[index].description = value as string
     } else if (field === 'qty') {
@@ -105,42 +134,51 @@ export default function NewInvoicePage() {
       updated[index].unit_price = Number(value) || 0
       updated[index].line_total = updated[index].qty * updated[index].unit_price
     }
+
     setLineItems(updated)
   }
 
-  const addLineItem = () => {
-    setLineItems([...lineItems, { description: '', qty: 1, unit_price: 0, line_total: 0 }])
+  function addLineItem() {
+    setLineItems([...lineItems, createEmptyLineItem()])
   }
 
-  const removeLineItem = (index: number) => {
-    if (lineItems.length > 1) {
-      setLineItems(lineItems.filter((_, i) => i !== index))
-    }
+  function removeLineItem(index: number) {
+    if (lineItems.length === 1) return
+    setLineItems(lineItems.filter((_, lineIndex) => lineIndex !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
     if (!jobId) {
-      toast({ title: 'Error', description: 'Please select a job', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Please select a job first.', variant: 'destructive' })
       return
     }
+
     if (!customerName) {
-      toast({ title: 'Error', description: 'Customer name is required', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Customer name is required.', variant: 'destructive' })
       return
     }
-    if (lineItems.every(item => !item.description)) {
-      toast({ title: 'Error', description: 'Add at least one line item', variant: 'destructive' })
+
+    if (lineItems.every((item) => !item.description.trim())) {
+      toast({ title: 'Error', description: 'Add at least one line item.', variant: 'destructive' })
       return
     }
 
     setLoading(true)
 
     try {
-      // Get next invoice number from server
       const { data: invoiceNum, error: seqError } = await supabase.rpc('get_next_invoice_number')
       if (seqError) throw seqError
 
-      const validLineItems = lineItems.filter(item => item.description)
+      const validLineItems = lineItems
+        .filter((item) => item.description.trim())
+        .map((item) => ({
+          ...item,
+          qty: Number(item.qty) || 0,
+          unit_price: Number(item.unit_price) || 0,
+          line_total: Number(item.line_total) || 0,
+        }))
 
       const { data: invoice, error } = await supabase
         .from('invoices')
@@ -168,7 +206,6 @@ export default function NewInvoicePage() {
 
       if (error) throw error
 
-      // Generate PDF
       const pdfResponse = await fetch('/api/invoice/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,36 +216,63 @@ export default function NewInvoicePage() {
         console.error('PDF generation failed')
       }
 
-      toast({ title: 'Invoice created!', description: `Invoice #${invoiceNum}`, variant: 'success' })
+      toast({
+        title: 'Invoice created',
+        description: `Invoice #${invoiceNum} is ready.`,
+        variant: 'success',
+      })
       router.push(`/invoices/${invoice.id}`)
       router.refresh()
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create invoice.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="page-container safe-top">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="page-container safe-top pb-32">
+      <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-dark-card"
         >
-          <ArrowLeft className="w-5 h-5 text-navy-800" />
+          <ArrowLeft className="h-5 w-5 text-navy-800 dark:text-dark-text" />
         </button>
-        <h1 className="text-xl font-bold text-navy-800">Create Invoice</h1>
+        <div>
+          <h1 className="text-xl font-bold text-navy-800 dark:text-dark-text">Create Invoice</h1>
+          <p className="text-sm text-navy-500 dark:text-dark-muted">Start from a job and let MetroGlassOps build the draft.</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Job Selection */}
         <Card>
-          <CardContent>
-            <p className="text-sm font-medium text-navy-800 mb-2">Job *</p>
+          <CardContent className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">
+                  Smart generator
+                </p>
+                <h2 className="mt-2 text-lg font-semibold text-navy-900 dark:text-dark-text">
+                  Choose the job and invoice type
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-navy-500 dark:text-dark-muted">
+                  We will pull client info, scope, and pricing from the job so you only adjust what is unique for this invoice.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-orange-700 dark:border-orange-900/30 dark:bg-orange-900/15 dark:text-orange-300">
+                Smart Draft
+              </div>
+            </div>
+
             <div className="relative">
               <Input
-                placeholder="Search job..."
+                label="Job"
+                placeholder="Search job by name, client, or address..."
                 value={jobSearch}
                 onChange={(e) => {
                   setJobSearch(e.target.value)
@@ -216,28 +280,100 @@ export default function NewInvoicePage() {
                   if (jobId) setJobId(null)
                 }}
                 onFocus={() => setShowJobDropdown(true)}
-                icon={<Search className="w-5 h-5" />}
+                icon={<Search className="h-5 w-5" />}
               />
+
               {showJobDropdown && jobSearch && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
-                  {filteredJobs.map((job) => (
-                    <button
-                      key={job.id}
-                      type="button"
-                      onClick={() => handleSelectJob(job)}
-                      className="w-full px-4 py-3 text-left hover:bg-cream-50"
-                    >
-                      <p className="font-medium text-navy-800">{job.job_name}</p>
-                      <p className="text-sm text-gray-500">{job.clients?.name || job.address}</p>
-                    </button>
-                  ))}
+                <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-[24px] border border-cream-200 bg-white shadow-card dark:border-dark-border dark:bg-dark-card">
+                  {filteredJobs.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-navy-500 dark:text-dark-muted">
+                      No matching jobs
+                    </div>
+                  ) : (
+                    filteredJobs.map((job) => {
+                      const plannedValue = Number(job.quoted_price || 0)
+                      return (
+                        <button
+                          key={job.id}
+                          type="button"
+                          onClick={() => handleSelectJob(job)}
+                          className="w-full border-b border-cream-100 px-4 py-3 text-left last:border-b-0 hover:bg-cream-50 dark:border-dark-border dark:hover:bg-dark-bg/50"
+                        >
+                          <p className="font-medium text-navy-800 dark:text-dark-text">{job.job_name}</p>
+                          <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">
+                            {job.clients?.name || job.address}
+                          </p>
+                          <p className="mt-1 text-xs font-medium text-orange-700 dark:text-orange-300">
+                            {plannedValue > 0 ? `${formatCurrency(plannedValue)} planned` : 'No planned value yet'}
+                          </p>
+                        </button>
+                      )
+                    })
+                  )}
                 </div>
               )}
             </div>
+
+            <Select
+              value={invoiceMode}
+              onValueChange={(value) => {
+                const nextMode = value as InvoiceDraftMode
+                setInvoiceMode(nextMode)
+              }}
+            >
+              <SelectTrigger label="Invoice type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(invoiceModeLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedJob && draftSummary && (
+              <div className="rounded-[28px] border border-cream-200/90 bg-cream-50/85 p-4 dark:border-dark-border dark:bg-dark-bg/50">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-navy-900 dark:text-dark-text">{selectedJob.job_name}</p>
+                    <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">{selectedJob.address}</p>
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => applySmartDraft(selectedJob, invoiceMode)}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Refresh Draft
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="rounded-[22px] border border-cream-200 bg-white/90 p-3 dark:border-dark-border dark:bg-dark-card/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">Planned</p>
+                    <p className="mt-1 font-semibold text-navy-900 dark:text-dark-text">{formatCurrency(draftSummary.plannedValue)}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-cream-200 bg-white/90 p-3 dark:border-dark-border dark:bg-dark-card/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">Deposit</p>
+                    <p className="mt-1 font-semibold text-navy-900 dark:text-dark-text">{formatCurrency(draftSummary.suggestedDeposit)}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-cream-200 bg-white/90 p-3 dark:border-dark-border dark:bg-dark-card/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">Collected</p>
+                    <p className="mt-1 font-semibold text-green-600 dark:text-green-400">{formatCurrency(draftSummary.collected)}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-cream-200 bg-white/90 p-3 dark:border-dark-border dark:bg-dark-card/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-500 dark:text-dark-muted">Remaining</p>
+                    <p className="mt-1 font-semibold text-orange-700 dark:text-orange-300">{formatCurrency(draftSummary.remainingBalance)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-navy-500 dark:text-dark-muted">
+                  <span>{selectedJob.scope_of_work || 'No scope of work saved yet'}</span>
+                  <span>{existingInvoiceValue > 0 ? `${formatCurrency(existingInvoiceValue)} already invoiced` : 'No prior invoices'}</span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Dates */}
         <Card>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -257,11 +393,10 @@ export default function NewInvoicePage() {
           </CardContent>
         </Card>
 
-        {/* Customer Info */}
         <Card>
           <CardContent className="space-y-4">
             <Input
-              label="Customer Name *"
+              label="Customer Name"
               placeholder="Bill to..."
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
@@ -277,13 +412,21 @@ export default function NewInvoicePage() {
           </CardContent>
         </Card>
 
-        {/* Line Items */}
         <Card>
           <CardContent className="space-y-4">
-            <p className="text-sm font-medium text-navy-800">Line Items</p>
-            
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-navy-800 dark:text-dark-text">Line Items</p>
+                <p className="text-sm text-navy-500 dark:text-dark-muted">Start from the smart draft, then fine-tune it.</p>
+              </div>
+              <Button type="button" variant="outline" onClick={() => selectedJob && applySmartDraft(selectedJob, invoiceMode)} disabled={!selectedJob}>
+                <FileText className="mr-2 h-4 w-4" />
+                Rebuild
+              </Button>
+            </div>
+
             {lineItems.map((item, index) => (
-              <div key={index} className="p-3 bg-cream-50 rounded-xl space-y-3">
+              <div key={index} className="space-y-3 rounded-[24px] bg-cream-50 p-3 dark:bg-dark-bg/50">
                 <div className="flex items-start gap-2">
                   <Input
                     placeholder="Description"
@@ -295,12 +438,13 @@ export default function NewInvoicePage() {
                     <button
                       type="button"
                       onClick={() => removeLineItem(index)}
-                      className="w-10 h-10 flex items-center justify-center text-red-500"
+                      className="flex h-10 w-10 items-center justify-center text-red-500"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   )}
                 </div>
+
                 <div className="grid grid-cols-3 gap-2">
                   <Input
                     type="number"
@@ -316,27 +460,24 @@ export default function NewInvoicePage() {
                     onChange={(e) => updateLineItem(index, 'unit_price', e.target.value)}
                   />
                   <div className="flex items-center justify-end">
-                    <span className="font-medium text-navy-800">
-                      {formatCurrency(item.line_total)}
-                    </span>
+                    <span className="font-medium text-navy-800 dark:text-dark-text">{formatCurrency(item.line_total)}</span>
                   </div>
                 </div>
               </div>
             ))}
 
             <Button type="button" variant="outline" onClick={addLineItem} className="w-full">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Line Item
             </Button>
           </CardContent>
         </Card>
 
-        {/* Discount & Tax */}
         <Card>
           <CardContent className="space-y-4">
             <Switch
               label="Apply Discount"
-              description="10% regular customer discount"
+              description="Turn this on if this invoice needs a discount."
               checked={discountApplied}
               onCheckedChange={setDiscountApplied}
             />
@@ -349,16 +490,17 @@ export default function NewInvoicePage() {
               />
             )}
 
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-gray-100 pt-4 dark:border-dark-border">
               <Switch
                 label="Apply Tax"
-                description="For repair work"
+                description="Use this for taxable repair or service work."
                 checked={taxApplied}
                 onCheckedChange={setTaxApplied}
               />
+
               {taxApplied && (
                 <div className="mt-3">
-                  <Select value={taxRate.toString()} onValueChange={(v) => setTaxRate(Number(v))}>
+                  <Select value={taxRate.toString()} onValueChange={(value) => setTaxRate(Number(value))}>
                     <SelectTrigger label="Tax Rate">
                       <SelectValue />
                     </SelectTrigger>
@@ -376,41 +518,39 @@ export default function NewInvoicePage() {
           </CardContent>
         </Card>
 
-        {/* Totals */}
         <Card>
           <CardContent className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Subtotal</span>
-              <span className="text-navy-800">{formatCurrency(subtotal)}</span>
+              <span className="text-gray-500 dark:text-dark-muted">Subtotal</span>
+              <span className="text-navy-800 dark:text-dark-text">{formatCurrency(subtotal)}</span>
             </div>
             {discountApplied && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Discount ({discountPercent}%)</span>
-                <span className="text-red-600">-{formatCurrency(discountAmount)}</span>
+                <span className="text-gray-500 dark:text-dark-muted">Discount ({discountPercent}%)</span>
+                <span className="text-red-600 dark:text-red-400">-{formatCurrency(discountAmount)}</span>
               </div>
             )}
             {taxApplied && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Tax ({taxRate}%)</span>
-                <span className="text-navy-800">{formatCurrency(taxAmount)}</span>
+                <span className="text-gray-500 dark:text-dark-muted">Tax ({taxRate}%)</span>
+                <span className="text-navy-800 dark:text-dark-text">{formatCurrency(taxAmount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
-              <span className="text-navy-800">Total</span>
-              <span className="text-navy-800">{formatCurrency(total)}</span>
+            <div className="flex justify-between border-t border-gray-100 pt-2 text-lg font-bold dark:border-dark-border">
+              <span className="text-navy-800 dark:text-dark-text">Total</span>
+              <span className="text-navy-800 dark:text-dark-text">{formatCurrency(total)}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Notes */}
         <Card>
           <CardContent>
             <Textarea
               label="Notes"
-              placeholder="Payment terms, special instructions..."
+              placeholder="Payment terms, project notes, or anything the client should see..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
+              rows={4}
             />
           </CardContent>
         </Card>

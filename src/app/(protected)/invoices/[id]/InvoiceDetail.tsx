@@ -6,6 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -27,6 +35,7 @@ import {
   ReceiptText,
   Share2,
   Sparkles,
+  Trash2,
 } from 'lucide-react'
 import {
   formatCurrency,
@@ -53,6 +62,8 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
   const [updating, setUpdating] = useState(false)
   const [creatingLink, setCreatingLink] = useState(false)
   const [paymentLinkUrl, setPaymentLinkUrl] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletingInvoice, setDeletingInvoice] = useState(false)
 
   const lineItems = invoice.line_items_json as LineItem[]
   const statusConfig = invoiceStatusConfig[invoice.status]
@@ -197,6 +208,33 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
     await handleCopyPaymentLink()
   }
 
+  const handleDeleteInvoice = async () => {
+    setDeletingInvoice(true)
+
+    const { error } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', invoice.id)
+
+    if (error) {
+      toast({
+        title: 'Delete failed',
+        description: 'Could not delete this invoice.',
+        variant: 'destructive',
+      })
+      setDeletingInvoice(false)
+      return
+    }
+
+    toast({
+      title: 'Invoice deleted',
+      description: `Invoice #${invoice.invoice_number} was removed.`,
+      variant: 'success',
+    })
+    router.push('/invoices')
+    router.refresh()
+  }
+
   return (
     <div className="page-container safe-top pb-32">
       <section className="relative mb-6 overflow-hidden rounded-[34px] border border-cream-200/90 bg-white/88 p-6 shadow-card-lg backdrop-blur-sm dark:border-dark-border dark:bg-dark-card/90 dark:shadow-card-dark">
@@ -248,6 +286,10 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
               <Button variant="outline" onClick={handleSharePdf}>
                 <Share2 className="mr-2 h-4 w-4" />
                 Share PDF
@@ -555,6 +597,25 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
           </Card>
         </div>
       </div>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete invoice?</DialogTitle>
+            <DialogDescription>
+              This removes invoice #{invoice.invoice_number}. Linked payments stay on the job, but they will no longer point to this invoice.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteInvoice} loading={deletingInvoice}>
+              Delete Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

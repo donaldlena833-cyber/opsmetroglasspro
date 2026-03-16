@@ -75,9 +75,9 @@ export function UpcomingInstalls({ installs, totalValue }: UpcomingInstallsProps
                 </div>
 
                 <p className="mt-3 text-sm font-medium text-navy-700 dark:text-orange-300">
-                  {install.total_invoice_value > 0
-                    ? `${formatCurrency(install.total_invoice_value)} registered`
-                    : 'No invoice value registered yet'}
+                  {install.total_registered_value > 0
+                    ? `${formatCurrency(install.total_registered_value)} registered`
+                    : 'No job value registered yet'}
                 </p>
               </div>
 

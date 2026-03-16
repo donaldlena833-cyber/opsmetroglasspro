@@ -3,6 +3,7 @@ import { addDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { ArrowUpRight, BriefcaseBusiness, FileText, Receipt, Sparkles, BarChart3 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
+import { getRegisteredJobValue } from '@/lib/invoice-builder'
 import { ReminderBanners } from './ReminderBanners'
 import { JobsAttention } from './JobsAttention'
 import { UpcomingInstalls } from './UpcomingInstalls'
@@ -49,6 +50,7 @@ async function getDashboardData() {
       id,
       job_name,
       address,
+      quoted_price,
       install_date,
       install_end_date,
       status,
@@ -164,14 +166,16 @@ export default async function TodayPage() {
   const activeJobCount = data.jobsForAttention.length
   const activeRegisteredValue = data.jobsForAttention.reduce((sum, job) => {
     const jobValue = job.invoices?.reduce((invoiceSum: number, invoice: any) => invoiceSum + Number(invoice.total || 0), 0) || 0
-    return sum + jobValue
+    return sum + getRegisteredJobValue(job.quoted_price, jobValue)
   }, 0)
   const upcomingInstalls = data.upcomingInstalls.map((install) => ({
     ...install,
-    total_invoice_value:
-      install.invoices?.reduce((sum: number, invoice: any) => sum + Number(invoice.total || 0), 0) || 0,
+    total_registered_value: getRegisteredJobValue(
+      install.quoted_price,
+      install.invoices?.reduce((sum: number, invoice: any) => sum + Number(invoice.total || 0), 0) || 0
+    ),
   }))
-  const upcomingInstallValue = upcomingInstalls.reduce((sum, install) => sum + Number(install.total_invoice_value || 0), 0)
+  const upcomingInstallValue = upcomingInstalls.reduce((sum, install) => sum + Number(install.total_registered_value || 0), 0)
 
   return (
     <div className="page-container safe-top">

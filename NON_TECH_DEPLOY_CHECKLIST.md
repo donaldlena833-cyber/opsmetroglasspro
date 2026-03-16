@@ -2,7 +2,7 @@
 
 Use this after the latest push to `main`.
 
-## 1. Run the Supabase security migration
+## 1. Run the Supabase migrations
 
 1. Open your Supabase project.
 2. In the left sidebar, click `SQL Editor`.
@@ -18,6 +18,15 @@ What this does:
 - tightens the database policies
 - fixes the function warnings
 - enables the private receipt flow
+
+Then run this file too:
+- `supabase/migrations/004_job_pricing_and_scope.sql`
+
+What that adds:
+- editable quoted totals on jobs
+- suggested deposit amounts
+- scope of work fields
+- smart invoice defaults based on the job
 
 If Supabase shows an error, stop there and send me the exact message or a screenshot.
 
@@ -57,21 +66,23 @@ If any are missing, add them and redeploy.
 2. Open the `opsmetroglasspro` project.
 3. Trigger a new deployment from the latest `main` commit.
 
-## 6. Test these 5 things after deploy
+## 6. Test these things after deploy
 
 1. Log in.
 2. Open `Expenses`.
 3. Tap a receipt image and confirm it opens.
 4. Open a job with an attached receipt and confirm that image loads there too.
 5. In Supabase, re-run the linter/security checks and confirm the fixed warnings are gone.
-6. Open an invoice and create a Stripe payment link.
-7. In Stripe, point your webhook to `https://ops.metroglasspro.com/api/stripe/webhook`.
+6. Open a job and confirm you can edit the quoted total and scope.
+7. Create an invoice from that job and confirm the smart draft pre-fills.
+8. Open an invoice and create a Stripe payment link.
+9. In Stripe, point your webhook to `https://ops.metroglasspro.com/api/stripe/webhook`.
 
 ## If you want the fastest path
 
 Do these in order:
 
-1. Run the SQL migration.
+1. Run both SQL migrations.
 2. Confirm `receipts` is private.
 3. Enable leaked password protection.
 4. Redeploy on Vercel.

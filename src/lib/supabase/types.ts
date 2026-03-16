@@ -101,6 +101,9 @@ export interface Database {
           install_date: string | null
           install_end_date: string | null
           notes: string | null
+          quoted_price: number | null
+          deposit_amount: number | null
+          scope_of_work: string | null
           // V2: Job specs
           glass_type: GlassType | null
           glass_thickness: GlassThickness | null
@@ -120,6 +123,9 @@ export interface Database {
           install_date?: string | null
           install_end_date?: string | null
           notes?: string | null
+          quoted_price?: number | null
+          deposit_amount?: number | null
+          scope_of_work?: string | null
           glass_type?: GlassType | null
           glass_thickness?: GlassThickness | null
           hardware_finish?: HardwareFinish | null
@@ -138,6 +144,9 @@ export interface Database {
           install_date?: string | null
           install_end_date?: string | null
           notes?: string | null
+          quoted_price?: number | null
+          deposit_amount?: number | null
+          scope_of_work?: string | null
           glass_type?: GlassType | null
           glass_thickness?: GlassThickness | null
           hardware_finish?: HardwareFinish | null
