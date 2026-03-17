@@ -86,9 +86,9 @@ export function ClientDetail({ data }: ClientDetailProps) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm dark:bg-dark-card dark:shadow-card-dark"
         >
-          <ArrowLeft className="w-5 h-5 text-navy-800" />
+          <ArrowLeft className="w-5 h-5 text-navy-800 dark:text-dark-text" />
         </button>
         <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
           <Edit className="w-4 h-4 mr-1" />
@@ -96,7 +96,7 @@ export function ClientDetail({ data }: ClientDetailProps) {
         </Button>
       </div>
 
-      <h1 className="text-xl font-bold text-navy-800 mb-4">{client.name}</h1>
+      <h1 className="mb-4 text-xl font-bold text-navy-800 dark:text-dark-text">{client.name}</h1>
 
       {editing ? (
         <Card className="mb-4">
@@ -115,20 +115,20 @@ export function ClientDetail({ data }: ClientDetailProps) {
             <CardContent className="space-y-3">
               {client.email && (
                 <a href={`mailto:${client.email}`} className="flex items-center gap-3 text-sm">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <span className="text-navy-800">{client.email}</span>
+                  <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <span className="text-navy-800 dark:text-dark-text">{client.email}</span>
                 </a>
               )}
               {client.phone && (
                 <a href={`tel:${client.phone}`} className="flex items-center gap-3 text-sm">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span className="text-navy-800">{client.phone}</span>
+                  <Phone className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <span className="text-navy-800 dark:text-dark-text">{client.phone}</span>
                 </a>
               )}
               {client.billing_address && (
                 <div className="flex items-start gap-3 text-sm">
-                  <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <span className="text-navy-800">{client.billing_address}</span>
+                  <MapPin className="mt-0.5 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <span className="text-navy-800 dark:text-dark-text">{client.billing_address}</span>
                 </div>
               )}
             </CardContent>
@@ -137,8 +137,8 @@ export function ClientDetail({ data }: ClientDetailProps) {
           {client.notes && (
             <Card className="mb-4">
               <CardContent>
-                <p className="text-xs text-gray-500 uppercase mb-2">Notes</p>
-                <p className="text-sm text-navy-800">{client.notes}</p>
+                <p className="mb-2 text-xs uppercase text-gray-500 dark:text-dark-muted">Notes</p>
+                <p className="text-sm text-navy-800 dark:text-dark-text">{client.notes}</p>
               </CardContent>
             </Card>
           )}
@@ -147,21 +147,21 @@ export function ClientDetail({ data }: ClientDetailProps) {
 
       <Card className="mb-4">
         <CardContent>
-          <h3 className="font-semibold text-navy-800 mb-3 flex items-center gap-2">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold text-navy-800 dark:text-dark-text">
             <DollarSign className="w-4 h-4" />
             Total Business
           </h3>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-xs text-gray-500">Jobs</p>
-              <p className="text-lg font-bold text-navy-800">{data.stats.jobsCount}</p>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Jobs</p>
+              <p className="text-lg font-bold text-navy-800 dark:text-dark-text">{data.stats.jobsCount}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Invoiced</p>
-              <p className="text-lg font-bold text-navy-800">{formatCurrency(data.stats.totalInvoiced)}</p>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Invoiced</p>
+              <p className="text-lg font-bold text-navy-800 dark:text-dark-text">{formatCurrency(data.stats.totalInvoiced)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Paid</p>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Paid</p>
               <p className="text-lg font-bold text-green-600">{formatCurrency(data.stats.totalPaid)}</p>
             </div>
           </div>
@@ -170,7 +170,7 @@ export function ClientDetail({ data }: ClientDetailProps) {
 
       <Card>
         <CardContent>
-          <h3 className="font-semibold text-navy-800 mb-3 flex items-center gap-2">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold text-navy-800 dark:text-dark-text">
             <Briefcase className="w-4 h-4" />
             Jobs ({data.jobs.length})
           </h3>
@@ -181,20 +181,20 @@ export function ClientDetail({ data }: ClientDetailProps) {
                 <button
                   key={job.id}
                   onClick={() => router.push(`/jobs/${job.id}`)}
-                  className="w-full p-3 bg-cream-50 rounded-xl text-left hover:bg-cream-100 flex items-center justify-between"
+                  className="flex w-full items-center justify-between rounded-xl bg-cream-50 p-3 text-left hover:bg-cream-100 dark:bg-dark-bg/60 dark:hover:bg-dark-border"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-navy-800">{job.job_name}</p>
+                      <p className="font-medium text-navy-800 dark:text-dark-text">{job.job_name}</p>
                       <Badge variant={job.status as any} className="text-xs">{statusConfig.label}</Badge>
                     </div>
-                    <p className="text-sm text-gray-500">{job.address}</p>
+                    <p className="text-sm text-gray-500 dark:text-dark-muted">{job.address}</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                  <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 </button>
               )
             })}
-            {data.jobs.length === 0 && <p className="text-sm text-gray-500 text-center py-4">No jobs yet</p>}
+            {data.jobs.length === 0 && <p className="py-4 text-center text-sm text-gray-500 dark:text-dark-muted">No jobs yet</p>}
           </div>
         </CardContent>
       </Card>

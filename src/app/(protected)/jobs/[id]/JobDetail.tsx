@@ -260,14 +260,14 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm dark:bg-dark-card dark:shadow-card-dark"
         >
-          <ArrowLeft className="w-5 h-5 text-navy-800" />
+          <ArrowLeft className="w-5 h-5 text-navy-800 dark:text-dark-text" />
         </button>
         <div className="flex gap-2">
           <button
             onClick={() => setShowDeleteDialog(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm text-red-500"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm text-red-500 dark:bg-dark-card dark:text-red-400 dark:shadow-card-dark"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -277,20 +277,20 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
       {/* Job Title & Status */}
       <div className="mb-4">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-xl font-bold text-navy-800">{job.job_name}</h1>
+          <h1 className="text-xl font-bold text-navy-800 dark:text-dark-text">{job.job_name}</h1>
           <Badge variant={job.status as any} className="flex-shrink-0">
             {statusConfig.label}
           </Badge>
         </div>
         <div className="mt-2 space-y-1">
-          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-muted">
             <MapPin className="w-4 h-4" />
             <span>{job.address}</span>
           </div>
           {job.clients && (
             <button
               onClick={() => router.push(`/clients/${job.clients!.id}`)}
-              className="flex items-center gap-1.5 text-sm text-navy-600 hover:text-navy-800"
+              className="flex items-center gap-1.5 text-sm text-navy-600 hover:text-navy-800 dark:text-orange-300 dark:hover:text-orange-200"
             >
               <User className="w-4 h-4" />
               <span>{job.clients.name}</span>
@@ -298,7 +298,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
             </button>
           )}
           {job.install_date && (
-            <div className="flex items-center gap-1.5 text-sm text-gray-500">
+            <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-muted">
               <Calendar className="w-4 h-4" />
               <span>
                 Install: {formatDateShort(job.install_date)}
@@ -316,20 +316,20 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
         <CardContent className="py-4">
           <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
             <div>
-              <p className="text-xs text-gray-500">Planned</p>
-              <p className="text-lg font-bold text-navy-800">{formatCurrency(Number(job.quoted_price || 0))}</p>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Planned</p>
+              <p className="text-lg font-bold text-navy-800 dark:text-dark-text">{formatCurrency(Number(job.quoted_price || 0))}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Registered</p>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Registered</p>
               <p className="text-lg font-bold text-orange-600">{formatCurrency(registeredValue)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Collected</p>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Collected</p>
               <p className="text-lg font-bold text-green-600">{formatCurrency(revenue)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Net</p>
-              <p className={cn('text-lg font-bold', net >= 0 ? 'text-navy-800' : 'text-red-600')}>
+              <p className="text-xs text-gray-500 dark:text-dark-muted">Net</p>
+              <p className={cn('text-lg font-bold', net >= 0 ? 'text-navy-800 dark:text-dark-text' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(net)}
               </p>
             </div>
@@ -339,7 +339,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
 
       {/* Tabs */}
       <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-        <Tabs.List className="flex gap-1 bg-white rounded-xl p-1 mb-4 shadow-sm">
+        <Tabs.List className="mb-4 flex gap-1 rounded-xl bg-white p-1 shadow-sm dark:bg-dark-card dark:shadow-card-dark">
           {['overview', 'costs', 'payments', 'invoices'].map((tab) => (
             <Tabs.Trigger
               key={tab}
@@ -347,8 +347,8 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
               className={cn(
                 'flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors capitalize',
                 activeTab === tab
-                  ? 'bg-navy-800 text-white'
-                  : 'text-gray-500 hover:text-navy-800'
+                  ? 'bg-navy-800 text-white dark:bg-orange-500 dark:text-charcoal-950'
+                  : 'text-gray-500 hover:text-navy-800 dark:text-dark-muted dark:hover:text-dark-text'
               )}
             >
               {tab}
@@ -532,7 +532,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
         {/* Costs Tab */}
         <Tabs.Content value="costs" className="space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-500">
+            <p className="text-sm font-medium text-gray-500 dark:text-dark-muted">
               Total: {formatCurrency(costs)}
             </p>
             <Button
@@ -560,7 +560,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
                         {expense.receipt_image_url ? (
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-border flex-shrink-0">
                             <img
                               src={expense.receipt_image_url}
                               alt="Receipt"
@@ -568,24 +568,24 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                             />
                           </div>
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-dark-border flex items-center justify-center flex-shrink-0">
                             <span className="text-xl">{categoryConfig?.icon || '📋'}</span>
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-navy-800">{expense.vendor}</p>
-                          <p className="text-sm text-gray-500">{categoryConfig?.label || expense.category}</p>
-                          <p className="text-xs text-gray-400 mt-1">{formatDateShort(expense.date)}</p>
+                          <p className="font-medium text-navy-800 dark:text-dark-text">{expense.vendor}</p>
+                          <p className="text-sm text-gray-500 dark:text-dark-muted">{categoryConfig?.label || expense.category}</p>
+                          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{formatDateShort(expense.date)}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
-                        <p className="font-semibold text-navy-800">{formatCurrency(expense.amount)}</p>
+                        <p className="font-semibold text-navy-800 dark:text-dark-text">{formatCurrency(expense.amount)}</p>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             setDeleteExpenseId(expense.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-opacity"
+                          className="p-1.5 rounded-lg text-red-500 opacity-0 transition-opacity hover:bg-red-50 group-hover:opacity-100 dark:text-red-400 dark:hover:bg-red-950/40"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -601,7 +601,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
         {/* Payments Tab */}
         <Tabs.Content value="payments" className="space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-500">
+            <p className="text-sm font-medium text-gray-500 dark:text-dark-muted">
               Total: {formatCurrency(revenue)}
             </p>
             <Button
@@ -630,15 +630,15 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-navy-800">{typeConfig?.label || payment.payment_type}</p>
-                          <span className="text-xs text-gray-400">via {methodConfig?.label || payment.method}</span>
+                          <p className="font-medium text-navy-800 dark:text-dark-text">{typeConfig?.label || payment.payment_type}</p>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">via {methodConfig?.label || payment.method}</span>
                         </div>
                         {payment.invoices && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-dark-muted">
                             Invoice #{payment.invoices.invoice_number}
                           </p>
                         )}
-                        <p className="text-xs text-gray-400 mt-1">{formatDateShort(payment.date)}</p>
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{formatDateShort(payment.date)}</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <p className="font-semibold text-green-600">+{formatCurrency(payment.amount)}</p>
@@ -647,7 +647,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                             e.stopPropagation()
                             setDeletePaymentId(payment.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-opacity"
+                          className="p-1.5 rounded-lg text-red-500 opacity-0 transition-opacity hover:bg-red-50 group-hover:opacity-100 dark:text-red-400 dark:hover:bg-red-950/40"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -663,7 +663,7 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
         {/* Invoices Tab */}
         <Tabs.Content value="invoices" className="space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-500">
+            <p className="text-sm font-medium text-gray-500 dark:text-dark-muted">
               {job.invoices?.length || 0} invoice(s)
             </p>
             <Button
@@ -695,14 +695,14 @@ export function JobDetail({ job: initialJob }: JobDetailProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-navy-800">#{invoice.invoice_number}</p>
+                          <p className="font-medium text-navy-800 dark:text-dark-text">#{invoice.invoice_number}</p>
                           <Badge variant={invoice.status as any}>{statusConfig.label}</Badge>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">{formatDateShort(invoice.invoice_date)}</p>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-dark-muted">{formatDateShort(invoice.invoice_date)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-navy-800">{formatCurrency(invoice.total)}</p>
-                        <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
+                        <p className="font-semibold text-navy-800 dark:text-dark-text">{formatCurrency(invoice.total)}</p>
+                        <ChevronRight className="ml-auto w-5 h-5 text-gray-400 dark:text-gray-500" />
                       </div>
                     </div>
                   </Card>
