@@ -1,7 +1,15 @@
+import { addDays, format, parseISO } from 'date-fns'
 import { Client, GlassThickness, GlassType, HardwareFinish, Job, LineItem, Payment } from '@/lib/supabase/types'
 import { glassThicknessConfig, glassTypeConfig, hardwareFinishConfig } from '@/lib/utils'
 
 export type InvoiceDraftMode = 'full' | 'deposit' | 'balance'
+export type InvoiceDraftInsightTone = 'info' | 'warning' | 'success'
+
+export interface InvoiceDraftInsight {
+  tone: InvoiceDraftInsightTone
+  label: string
+  detail: string
+}
 
 export type JobInvoiceDraftSource = Pick<
   Job,
@@ -22,6 +30,11 @@ export type JobInvoiceDraftSource = Pick<
 
 function roundCurrency(amount: number) {
   return Math.round(amount * 100) / 100
+}
+
+function parseInvoiceDate(value: string | Date) {
+  if (value instanceof Date) return value
+  return parseISO(value)
 }
 
 function getSpecLabel<T extends string>(
@@ -51,6 +64,14 @@ export function getSuggestedDeposit(job: JobInvoiceDraftSource) {
   }
 
   return 0
+}
+
+export function getRecommendedInvoiceDueDate(invoiceDate: string | Date, mode: InvoiceDraftMode) {
+  const baseDate = parseInvoiceDate(invoiceDate)
+  const safeDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate
+  const daysToAdd = mode === 'deposit' ? 7 : mode === 'balance' ? 10 : 14
+
+  return format(addDays(safeDate, daysToAdd), 'yyyy-MM-dd')
 }
 
 export function getRegisteredJobValue(quotedPrice: number | null | undefined, invoiceTotal: number) {
@@ -89,13 +110,77 @@ export function buildInvoiceDraftSummary(job: JobInvoiceDraftSource) {
   }
 }
 
+export function getInvoiceDraftAmountForMode(job: JobInvoiceDraftSource, mode: InvoiceDraftMode) {
+  return roundCurrency(
+    buildInvoiceLineItemsFromJob(job, mode).reduce((sum, item) => sum + Number(item.line_total || 0), 0)
+  )
+}
+
+export function buildInvoiceDraftInsights(job: JobInvoiceDraftSource, mode: InvoiceDraftMode): InvoiceDraftInsight[] {
+  const plannedValue = roundCurrency(Number(job.quoted_price ?? 0))
+  const suggestedDeposit = getSuggestedDeposit(job)
+  const collected = getCollectedForJob(job)
+  const remainingBalance = plannedValue > 0 ? roundCurrency(Math.max(plannedValue - collected, 0)) : 0
+  const insights: InvoiceDraftInsight[] = []
+
+  if (!job.clients?.name) {
+    insights.push({
+      tone: 'info',
+      label: 'No saved client name',
+      detail: 'This draft can still work, but billing details will need more manual cleanup.',
+    })
+  }
+
+  if (!job.scope_of_work?.trim()) {
+    insights.push({
+      tone: 'info',
+      label: 'Scope of work is missing',
+      detail: 'Adding scope on the job gives you cleaner line items and better invoice notes.',
+    })
+  }
+
+  if (plannedValue <= 0) {
+    insights.push({
+      tone: 'warning',
+      label: 'No quoted total saved',
+      detail: 'The smart draft cannot calculate a reliable amount until the job has a quoted total.',
+    })
+  }
+
+  if (mode === 'deposit' && suggestedDeposit <= 0) {
+    insights.push({
+      tone: 'warning',
+      label: 'No deposit amount available',
+      detail: 'Set a quoted total or deposit on the job to generate a smart deposit request.',
+    })
+  }
+
+  if (mode === 'balance' && plannedValue > 0 && remainingBalance <= 0) {
+    insights.push({
+      tone: 'success',
+      label: 'Balance is already covered',
+      detail: 'This job looks fully collected against the planned value unless there is a change order.',
+    })
+  }
+
+  if (plannedValue > 0 && collected > plannedValue) {
+    insights.push({
+      tone: 'warning',
+      label: 'Collected exceeds planned value',
+      detail: 'Review payments and pricing before sending another invoice for this job.',
+    })
+  }
+
+  return insights.slice(0, 4)
+}
+
 export function buildInvoiceNotesFromJob(job: JobInvoiceDraftSource, mode: InvoiceDraftMode) {
   const opening =
     mode === 'deposit'
-      ? 'Deposit requested to begin fabrication and scheduling.'
+      ? 'Deposit requested to begin fabrication, material ordering, and scheduling.'
       : mode === 'balance'
-        ? 'Final balance due upon completion of work.'
-        : 'Thank you for choosing MetroGlass Pro.'
+        ? 'This invoice covers the remaining balance due upon completion of work.'
+        : 'Thank you for choosing MetroGlass Pro. Please review the project scope below.'
 
   const scopeLine = job.scope_of_work?.trim()
     ? `Scope: ${job.scope_of_work.trim()}`
