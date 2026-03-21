@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog'
 import { addMonths, isBefore } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { JobActionButtons } from '@/components/JobActionButtons'
 
 interface JobsListProps {
   initialJobs: (JobWithClient & {
@@ -417,6 +418,14 @@ export function JobsList({ initialJobs, totals }: JobsListProps) {
                             {formatCurrency(net)}
                           </p>
                         </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <JobActionButtons
+                          jobId={job.id}
+                          attentionReason={attention.reason}
+                          className="justify-start"
+                        />
                       </div>
 
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-navy-400 dark:text-dark-muted">

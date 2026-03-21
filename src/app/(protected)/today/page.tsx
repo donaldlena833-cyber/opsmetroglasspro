@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { addDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
-import { ArrowUpRight, BriefcaseBusiness, FileText, Receipt, Sparkles, BarChart3 } from 'lucide-react'
+import { ArrowUpRight, BriefcaseBusiness, FileText, Receipt, Sparkles, BarChart3, CreditCard, Bell, Camera } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { getRegisteredJobValue } from '@/lib/invoice-builder'
@@ -124,6 +124,29 @@ const quickLinks = [
   },
 ]
 
+const workflowShortcuts = [
+  {
+    href: '/jobs/expense/quick',
+    label: 'Quick Expense',
+    icon: Camera,
+  },
+  {
+    href: '/jobs/payment/new',
+    label: 'Record Payment',
+    icon: CreditCard,
+  },
+  {
+    href: '/invoices/new',
+    label: 'Create Invoice',
+    icon: FileText,
+  },
+  {
+    href: '/jobs/reminder/new',
+    label: 'Add Reminder',
+    icon: Bell,
+  },
+]
+
 export default async function TodayPage() {
   const data = await getDashboardData()
   const now = new Date()
@@ -234,6 +257,34 @@ export default async function TodayPage() {
               <p className="mt-1 text-xs text-navy-400 dark:text-dark-muted">Across active jobs</p>
             </Card>
           </div>
+        </div>
+      </section>
+
+      <section className="mb-6">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="section-title mb-1">Fast Lane</h2>
+            <p className="page-subtitle">One-tap actions for the workflows you open most.</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {workflowShortcuts.map((shortcut) => {
+            const Icon = shortcut.icon
+
+            return (
+              <Link
+                key={shortcut.href}
+                href={shortcut.href}
+                className="inline-flex min-w-fit items-center gap-2 rounded-2xl border border-cream-200 bg-white/85 px-4 py-3 text-sm font-semibold text-navy-700 shadow-soft transition-all hover:-translate-y-0.5 hover:bg-cream-50 dark:border-dark-border dark:bg-dark-card/85 dark:text-dark-text dark:hover:bg-dark-border"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cream-100 text-navy-700 dark:bg-dark-border dark:text-dark-text">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span>{shortcut.label}</span>
+              </Link>
+            )
+          })}
         </div>
       </section>
 

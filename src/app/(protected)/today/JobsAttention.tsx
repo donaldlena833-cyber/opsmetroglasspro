@@ -5,7 +5,8 @@ import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { JobWithRelations } from '@/lib/supabase/types'
-import { jobStatusConfig } from '@/lib/utils'
+import { getJobAttentionStatus, jobStatusConfig } from '@/lib/utils'
+import { JobActionButtons } from '@/components/JobActionButtons'
 
 interface JobsAttentionProps {
   jobs: (JobWithRelations & { clients: { name: string } | null })[]
@@ -13,28 +14,6 @@ interface JobsAttentionProps {
 
 export function JobsAttention({ jobs }: JobsAttentionProps) {
   const router = useRouter()
-
-  const getAttentionMessage = (job: JobsAttentionProps['jobs'][0]) => {
-    const hasDeposit = job.payments?.some((payment) => payment.payment_type === 'deposit')
-    const hasGlassExpense = job.expenses?.some(
-      (expense) =>
-        expense.category === 'glass_fabrication' ||
-        expense.category === 'mr_glass' ||
-        expense.category === 'glass'
-    )
-    const hasFinalPayment = job.payments?.some((payment) => payment.payment_type === 'final')
-
-    if (['deposit_received', 'measured', 'ordered', 'installed'].includes(job.status) && !hasDeposit) {
-      return 'Waiting for deposit'
-    }
-    if (['measured', 'ordered'].includes(job.status) && !hasGlassExpense) {
-      return 'Need to order glass'
-    }
-    if (job.status === 'installed' && !hasFinalPayment) {
-      return 'Collect final payment'
-    }
-    return ''
-  }
 
   return (
     <div className="mb-6">
@@ -58,7 +37,7 @@ export function JobsAttention({ jobs }: JobsAttentionProps) {
       <div className="space-y-3">
         {jobs.map((job) => {
           const statusConfig = jobStatusConfig[job.status]
-          const attentionMessage = getAttentionMessage(job)
+          const attention = getJobAttentionStatus(job)
 
           return (
             <Card
@@ -79,9 +58,18 @@ export function JobsAttention({ jobs }: JobsAttentionProps) {
                   {job.clients && (
                     <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">{job.clients.name}</p>
                   )}
-                  <div className="mt-3 inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
-                    {attentionMessage}
-                  </div>
+                  {attention.message && (
+                    <div className="mt-3 inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+                      {attention.message}
+                    </div>
+                  )}
+
+                  <JobActionButtons
+                    jobId={job.id}
+                    attentionReason={attention.reason}
+                    compact
+                    className="mt-4"
+                  />
                 </div>
 
                 <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-navy-300 dark:text-dark-muted" />
