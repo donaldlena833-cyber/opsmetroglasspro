@@ -222,7 +222,7 @@ export default function NewExpensePage() {
                 icon={<Search className="w-5 h-5" />}
               />
               {showJobDropdown && jobSearch && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-dark-border dark:bg-dark-card">
                   {filteredJobs.map((job) => (
                     <button
                       key={job.id}
@@ -232,10 +232,10 @@ export default function NewExpensePage() {
                         setJobSearch(job.job_name)
                         setShowJobDropdown(false)
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-cream-50"
+                      className="w-full px-4 py-3 text-left hover:bg-cream-50 dark:hover:bg-dark-border"
                     >
-                      <p className="font-medium text-navy-800">{job.job_name}</p>
-                      <p className="text-sm text-gray-500">{job.address}</p>
+                      <p className="font-medium text-navy-800 dark:text-dark-text">{job.job_name}</p>
+                      <p className="text-sm text-gray-500 dark:text-dark-muted">{job.address}</p>
                     </button>
                   ))}
                   <button
@@ -245,7 +245,7 @@ export default function NewExpensePage() {
                       setJobSearch('')
                       setShowJobDropdown(false)
                     }}
-                    className="w-full px-4 py-3 text-left hover:bg-cream-50 border-t border-gray-100 text-gray-500"
+                    className="w-full border-t border-gray-100 px-4 py-3 text-left text-gray-500 hover:bg-cream-50 dark:border-dark-border dark:text-dark-muted dark:hover:bg-dark-border"
                   >
                     General Expense (no job)
                   </button>
@@ -253,7 +253,7 @@ export default function NewExpensePage() {
               )}
             </div>
             {selectedJob && (
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="mt-2 text-sm text-gray-500 dark:text-dark-muted">
                 Selected: {selectedJob.job_name}
               </p>
             )}

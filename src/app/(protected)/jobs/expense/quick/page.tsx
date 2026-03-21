@@ -232,7 +232,7 @@ export default function QuickExpensePage() {
 
           <Card>
             <CardContent>
-              <p className="text-sm font-medium text-navy-800 mb-2">Attach to Job</p>
+              <p className="mb-2 text-sm font-medium text-navy-800 dark:text-dark-text">Attach to Job</p>
               <div className="relative">
                 <Input
                   placeholder="Search job..."
@@ -246,7 +246,7 @@ export default function QuickExpensePage() {
                   icon={<Search className="w-5 h-5" />}
                 />
                 {showJobDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-auto">
+                  <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-dark-border dark:bg-dark-card">
                     {filteredJobs.slice(0, 5).map((job) => (
                       <button
                         key={job.id}
@@ -256,15 +256,15 @@ export default function QuickExpensePage() {
                           setJobSearch(job.job_name)
                           setShowJobDropdown(false)
                         }}
-                        className="w-full px-4 py-3 text-left hover:bg-cream-50"
+                        className="w-full px-4 py-3 text-left hover:bg-cream-50 dark:hover:bg-dark-border"
                       >
-                        <p className="font-medium text-navy-800 text-sm">{job.job_name}</p>
+                        <p className="text-sm font-medium text-navy-800 dark:text-dark-text">{job.job_name}</p>
                       </button>
                     ))}
                     <button
                       type="button"
                       onClick={() => { setJobId(null); setJobSearch(''); setShowJobDropdown(false) }}
-                      className="w-full px-4 py-3 text-left hover:bg-cream-50 border-t text-gray-500 text-sm"
+                      className="w-full border-t px-4 py-3 text-left text-sm text-gray-500 hover:bg-cream-50 dark:border-dark-border dark:text-dark-muted dark:hover:bg-dark-border"
                     >
                       General Expense
                     </button>

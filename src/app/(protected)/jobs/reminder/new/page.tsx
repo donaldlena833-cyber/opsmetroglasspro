@@ -98,11 +98,11 @@ export default function NewReminderPage() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm dark:bg-dark-card dark:shadow-card-dark"
         >
-          <ArrowLeft className="w-5 h-5 text-navy-800" />
+          <ArrowLeft className="w-5 h-5 text-navy-800 dark:text-dark-text" />
         </button>
-        <h1 className="text-xl font-bold text-navy-800">Add Reminder</h1>
+        <h1 className="text-xl font-bold text-navy-800 dark:text-dark-text">Add Reminder</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -129,7 +129,7 @@ export default function NewReminderPage() {
         {/* Priority Selection */}
         <Card>
           <CardContent>
-            <p className="text-sm font-medium text-navy-800 mb-3">Priority Type</p>
+            <p className="mb-3 text-sm font-medium text-navy-800 dark:text-dark-text">Priority Type</p>
             <div className="space-y-2">
               {priorityOptions.map((option) => {
                 const Icon = option.icon
@@ -144,19 +144,19 @@ export default function NewReminderPage() {
                     className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${
                       isSelected
                         ? `${config.borderColor} ${config.bgColor}`
-                        : 'border-gray-200 bg-white'
+                        : 'border-gray-200 bg-white dark:border-dark-border dark:bg-dark-card'
                     }`}
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isSelected ? config.bgColor : 'bg-gray-100'
+                      isSelected ? config.bgColor : 'bg-gray-100 dark:bg-dark-border'
                     }`}>
-                      <Icon className={`w-5 h-5 ${isSelected ? config.color : 'text-gray-400'}`} />
+                      <Icon className={`w-5 h-5 ${isSelected ? config.color : 'text-gray-400 dark:text-dark-muted'}`} />
                     </div>
                     <div className="text-left">
-                      <p className={`font-medium ${isSelected ? config.color : 'text-navy-800'}`}>
+                      <p className={`font-medium ${isSelected ? config.color : 'text-navy-800 dark:text-dark-text'}`}>
                         {option.label}
                       </p>
-                      <p className="text-xs text-gray-500">{option.description}</p>
+                      <p className="text-xs text-gray-500 dark:text-dark-muted">{option.description}</p>
                     </div>
                   </button>
                 )
@@ -168,7 +168,7 @@ export default function NewReminderPage() {
         {/* Job Selection (Optional) */}
         <Card>
           <CardContent>
-            <p className="text-sm font-medium text-navy-800 mb-2">Link to Job (optional)</p>
+            <p className="mb-2 text-sm font-medium text-navy-800 dark:text-dark-text">Link to Job (optional)</p>
             <div className="relative">
               <Input
                 placeholder="Search job..."
@@ -182,7 +182,7 @@ export default function NewReminderPage() {
                 icon={<Search className="w-5 h-5" />}
               />
               {showJobDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-auto">
+                <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-dark-border dark:bg-dark-card">
                   {filteredJobs.slice(0, 5).map((job) => (
                     <button
                       key={job.id}
@@ -192,9 +192,9 @@ export default function NewReminderPage() {
                         setJobSearch(job.job_name)
                         setShowJobDropdown(false)
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-cream-50"
+                      className="w-full px-4 py-3 text-left hover:bg-cream-50 dark:hover:bg-dark-border"
                     >
-                      <p className="font-medium text-navy-800 text-sm">{job.job_name}</p>
+                      <p className="text-sm font-medium text-navy-800 dark:text-dark-text">{job.job_name}</p>
                     </button>
                   ))}
                   <button
@@ -204,7 +204,7 @@ export default function NewReminderPage() {
                       setJobSearch('')
                       setShowJobDropdown(false)
                     }}
-                    className="w-full px-4 py-3 text-left hover:bg-cream-50 border-t text-gray-500 text-sm"
+                    className="w-full border-t px-4 py-3 text-left text-sm text-gray-500 hover:bg-cream-50 dark:border-dark-border dark:text-dark-muted dark:hover:bg-dark-border"
                   >
                     No job (general reminder)
                   </button>
@@ -212,7 +212,7 @@ export default function NewReminderPage() {
               )}
             </div>
             {selectedJob && (
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="mt-2 text-sm text-gray-500 dark:text-dark-muted">
                 Linked to: {selectedJob.job_name}
               </p>
             )}

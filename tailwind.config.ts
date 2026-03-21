@@ -47,11 +47,11 @@ const config: Config = {
         },
         // Dark mode stays warm instead of cold blue-gray
         dark: {
-          bg: '#161412',
-          card: '#221E1A',
-          border: '#3A332D',
-          text: '#F6F1E8',
-          muted: '#B2A697',
+          bg: '#171411',
+          card: '#221D19',
+          border: '#4A433C',
+          text: '#FBF7EF',
+          muted: '#C3B7A9',
         },
       },
       fontFamily: {

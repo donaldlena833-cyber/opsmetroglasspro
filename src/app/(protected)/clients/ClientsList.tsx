@@ -62,15 +62,15 @@ export function ClientsList({ initialClients }: ClientsListProps) {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-navy-800 truncate">{client.name}</p>
+                  <p className="truncate font-semibold text-navy-800 dark:text-dark-text">{client.name}</p>
                   {client.email && (
-                    <p className="text-sm text-gray-500 truncate">{client.email}</p>
+                    <p className="truncate text-sm text-gray-500 dark:text-dark-muted">{client.email}</p>
                   )}
                   {client.phone && (
-                    <p className="text-sm text-gray-500">{client.phone}</p>
+                    <p className="text-sm text-gray-500 dark:text-dark-muted">{client.phone}</p>
                   )}
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                    <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                       <Briefcase className="w-3 h-3" />
                       <span>{client.jobsCount} job{client.jobsCount !== 1 ? 's' : ''}</span>
                     </div>
@@ -81,7 +81,7 @@ export function ClientsList({ initialClients }: ClientsListProps) {
                     )}
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+                <ChevronRight className="ml-2 w-5 h-5 flex-shrink-0 text-gray-400 dark:text-gray-500" />
               </div>
             </Card>
           ))}

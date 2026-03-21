@@ -26,6 +26,11 @@
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   /* Better touch targets */
@@ -66,6 +71,42 @@
 
   input[type="number"] {
     -moz-appearance: textfield;
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select,
+  .dark button[role="combobox"] {
+    color-scheme: dark;
+  }
+
+  .dark input,
+  .dark textarea {
+    caret-color: #FBF7EF;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #C3B7A9;
+    opacity: 1;
+  }
+
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark textarea:-webkit-autofill,
+  .dark textarea:-webkit-autofill:hover,
+  .dark textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: #FBF7EF;
+    -webkit-box-shadow: 0 0 0 1000px #171411 inset;
+    box-shadow: 0 0 0 1000px #171411 inset;
+    border: 1px solid #4A433C;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(92%) sepia(7%) saturate(213%) hue-rotate(348deg) brightness(103%) contrast(92%);
+    opacity: 0.9;
   }
 }
 

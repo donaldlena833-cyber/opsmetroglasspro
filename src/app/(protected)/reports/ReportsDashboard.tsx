@@ -138,7 +138,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
               ? ((currentData.revenue - currentData.expenses) / currentData.revenue * 100) >= 0 
                 ? 'text-green-600 dark:text-green-400' 
                 : 'text-red-600 dark:text-red-400'
-              : 'text-gray-400'
+              : 'text-gray-400 dark:text-dark-muted'
           )}>
             {currentData.revenue > 0 
               ? `${((currentData.revenue - currentData.expenses) / currentData.revenue * 100).toFixed(1)}%`

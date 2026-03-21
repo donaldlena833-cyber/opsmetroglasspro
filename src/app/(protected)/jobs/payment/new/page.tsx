@@ -359,8 +359,8 @@ export default function NewPaymentPage() {
                   )}
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-200 dark:border-dark-border rounded-xl p-6 text-center cursor-pointer hover:border-orange-300 transition-colors relative">
-                  <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                <div className="relative cursor-pointer rounded-xl border-2 border-dashed border-gray-200 p-6 text-center transition-colors hover:border-orange-300 dark:border-dark-border dark:hover:border-orange-500">
+                  <Upload className="mx-auto mb-1 h-6 w-6 text-gray-400 dark:text-dark-muted" />
                   <p className="text-xs text-gray-500 dark:text-dark-muted">Upload Zelle/Stripe confirmation</p>
                   <input
                     type="file"
