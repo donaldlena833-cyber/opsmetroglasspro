@@ -49,6 +49,8 @@ interface InvoiceDetailProps {
   invoice: InvoiceWithJob
 }
 
+const paymentLinkPercentageOptions = [25, 50, 75, 100]
+
 function getCustomerPaymentAmount(payment: Payment) {
   return Number(payment.gross_amount ?? payment.amount ?? 0)
 }
@@ -62,6 +64,8 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
   const [updating, setUpdating] = useState(false)
   const [creatingLink, setCreatingLink] = useState(false)
   const [paymentLinkUrl, setPaymentLinkUrl] = useState<string | null>(null)
+  const [paymentLinkPercent, setPaymentLinkPercent] = useState(100)
+  const [paymentLinkAmount, setPaymentLinkAmount] = useState<number | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingInvoice, setDeletingInvoice] = useState(false)
 
@@ -70,6 +74,14 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
   const job = invoice.jobs
   const totalPaid = (invoice.payments || []).reduce((sum, payment) => sum + getCustomerPaymentAmount(payment), 0)
   const balanceDue = Math.max(Number(invoice.total) - totalPaid, 0)
+  const selectedChargeAmount = Math.round(balanceDue * (paymentLinkPercent / 100) * 100) / 100
+
+  const updatePaymentLinkPercent = (value: number) => {
+    const normalized = Math.min(Math.max(Number.isFinite(value) ? value : 100, 1), 100)
+    setPaymentLinkPercent(normalized)
+    setPaymentLinkUrl(null)
+    setPaymentLinkAmount(null)
+  }
 
   const handleStatusChange = async (newStatus: InvoiceStatus) => {
     setUpdating(true)
@@ -147,7 +159,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ invoiceId: invoice.id }),
+        body: JSON.stringify({ invoiceId: invoice.id, chargePercent: paymentLinkPercent }),
       })
 
       const payload = await response.json()
@@ -157,18 +169,19 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
       }
 
       setPaymentLinkUrl(payload.url)
+      setPaymentLinkAmount(Number(payload.chargeAmount || 0))
 
       try {
         await navigator.clipboard.writeText(payload.url)
         toast({
           title: 'Stripe link ready',
-          description: 'Payment link created and copied to your clipboard.',
+          description: `${payload.chargePercent || paymentLinkPercent}% payment link created and copied to your clipboard.`,
           variant: 'success',
         })
       } catch {
         toast({
           title: 'Stripe link ready',
-          description: 'Payment link created. Copy or open it below.',
+          description: `${payload.chargePercent || paymentLinkPercent}% payment link created. Copy or open it below.`,
           variant: 'success',
         })
       }
@@ -423,7 +436,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
                   Create a Stripe payment link
                 </h2>
                 <p className="mt-2 text-sm leading-7 text-navy-500 dark:text-dark-muted">
-                  Generate a hosted Stripe payment link for the current balance due, then copy or share it with the client.
+                  Choose what percentage of the current balance to charge, then generate a hosted Stripe payment link and send it to the client.
                 </p>
               </div>
 
@@ -434,13 +447,55 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
                   </div>
                   <div>
                     <p className="font-semibold text-orange-800 dark:text-orange-200">
-                      Stripe link amount: {formatCurrency(balanceDue)}
+                      Stripe link amount: {formatCurrency(paymentLinkAmount ?? selectedChargeAmount)}
                     </p>
                     <p className="mt-1 text-sm leading-6 text-orange-700/85 dark:text-orange-300/90">
-                      The link uses the remaining invoice balance based on payments already recorded in MetroGlassOps.
+                      {paymentLinkPercent}% of the current balance due. The full remaining balance is {formatCurrency(balanceDue)}.
                     </p>
                   </div>
                 </div>
+              </div>
+
+              <div className="space-y-4 rounded-[28px] border border-cream-200/90 bg-white/80 p-4 dark:border-dark-border dark:bg-dark-bg/50">
+                <div>
+                  <p className="text-sm font-medium text-navy-800 dark:text-dark-text">Charge percentage</p>
+                  <p className="mt-1 text-sm text-navy-500 dark:text-dark-muted">
+                    Apply the percentage to the balance due on this invoice.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  {paymentLinkPercentageOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => updatePaymentLinkPercent(option)}
+                      className={
+                        paymentLinkPercent === option
+                          ? 'rounded-2xl border border-orange-300 bg-orange-500 px-3 py-3 text-sm font-semibold text-white dark:border-orange-400 dark:bg-orange-500 dark:text-navy-900'
+                          : 'rounded-2xl border border-cream-200 bg-cream-50 px-3 py-3 text-sm font-medium text-navy-700 transition-colors hover:bg-cream-100 dark:border-dark-border dark:bg-dark-card dark:text-dark-text dark:hover:bg-dark-border'
+                      }
+                    >
+                      {option}%
+                    </button>
+                  ))}
+                </div>
+
+                <Input
+                  type="number"
+                  label="Custom percentage"
+                  value={paymentLinkPercent}
+                  onChange={(event) => updatePaymentLinkPercent(Number(event.target.value))}
+                  min={1}
+                  max={100}
+                  step={1}
+                />
+
+                {selectedChargeAmount < 0.5 && balanceDue > 0 && (
+                  <div className="rounded-[22px] border border-red-200 bg-red-50/80 p-3 text-sm leading-6 text-red-700 dark:border-red-900/30 dark:bg-red-900/15 dark:text-red-300">
+                    This percentage is too small for Stripe. Increase it until the charge is at least $0.50.
+                  </div>
+                )}
               </div>
 
               <Button
@@ -448,7 +503,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: InvoiceDetailProps) {
                 loading={creatingLink}
                 className="w-full"
                 size="lg"
-                disabled={balanceDue <= 0}
+                disabled={balanceDue <= 0 || selectedChargeAmount < 0.5}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 {paymentLinkUrl ? 'Create fresh Stripe link' : 'Create Stripe link'}

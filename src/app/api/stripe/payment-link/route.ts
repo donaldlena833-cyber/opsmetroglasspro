@@ -37,10 +37,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { invoiceId } = await request.json()
+    const { invoiceId, chargePercent } = await request.json()
 
     if (!invoiceId || typeof invoiceId !== 'string') {
       return NextResponse.json({ error: 'Invoice ID is required.' }, { status: 400 })
+    }
+
+    const normalizedChargePercent =
+      typeof chargePercent === 'number' ? chargePercent : Number(chargePercent ?? 100)
+
+    if (!Number.isFinite(normalizedChargePercent) || normalizedChargePercent <= 0 || normalizedChargePercent > 100) {
+      return NextResponse.json({ error: 'Charge percent must be between 1 and 100.' }, { status: 400 })
     }
 
     const { data: invoice, error } = await supabase
@@ -66,37 +73,56 @@ export async function POST(request: NextRequest) {
       return sum + Number(payment.gross_amount ?? payment.amount ?? 0)
     }, 0)
     const balanceDue = Math.max(Number(invoice.total) - paidAmount, 0)
-    const balanceDueCents = toCurrencyCents(balanceDue)
+    const chargeAmount = balanceDue * (normalizedChargePercent / 100)
+    const chargeAmountCents = toCurrencyCents(chargeAmount)
+    const roundedChargeAmount = Number((chargeAmountCents / 100).toFixed(2))
+    const isFullBalanceCharge = chargeAmountCents >= toCurrencyCents(balanceDue)
+    const paymentType =
+      isFullBalanceCharge ? 'final' : paidAmount <= 0 ? 'deposit' : 'other'
 
-    if (balanceDueCents <= 0) {
+    if (chargeAmountCents <= 0) {
       return NextResponse.json({ error: 'This invoice is already fully paid.' }, { status: 400 })
+    }
+
+    if (chargeAmountCents < 50) {
+      return NextResponse.json(
+        { error: 'The selected percentage is too small. Stripe links need at least $0.50 to create a payment.' },
+        { status: 400 }
+      )
     }
 
     const stripe = new Stripe(secretKey)
     const invoiceLabel = `Invoice #${invoice.invoice_number}`
     const job = Array.isArray(invoice.jobs) ? invoice.jobs[0] : invoice.jobs
     const jobName = job?.job_name ? ` • ${job.job_name}` : ''
+    const chargeLabel = isFullBalanceCharge
+      ? 'Remaining balance'
+      : `${normalizedChargePercent}% payment`
 
     const product = await stripe.products.create({
-      name: `${invoiceLabel}${jobName}`,
-      description: `MetroGlass Pro balance for ${invoice.customer_name}`,
+      name: `${invoiceLabel}${jobName} • ${chargeLabel}`,
+      description: `MetroGlass Pro ${chargeLabel.toLowerCase()} for ${invoice.customer_name}`,
       metadata: {
         invoice_id: invoice.id,
         job_id: invoice.job_id,
         invoice_number: String(invoice.invoice_number),
-        payment_type: 'final',
+        payment_type: paymentType,
+        charge_percent: String(normalizedChargePercent),
+        charge_amount: roundedChargeAmount.toFixed(2),
         source: 'stripe_payment_link',
       },
     })
 
     const price = await stripe.prices.create({
       currency: 'usd',
-      unit_amount: balanceDueCents,
+      unit_amount: chargeAmountCents,
       product: product.id,
       metadata: {
         invoice_id: invoice.id,
         invoice_number: String(invoice.invoice_number),
-        payment_type: 'final',
+        payment_type: paymentType,
+        charge_percent: String(normalizedChargePercent),
+        charge_amount: roundedChargeAmount.toFixed(2),
         source: 'stripe_payment_link',
       },
     })
@@ -114,7 +140,9 @@ export async function POST(request: NextRequest) {
         invoice_id: invoice.id,
         job_id: invoice.job_id,
         invoice_number: String(invoice.invoice_number),
-        payment_type: 'final',
+        payment_type: paymentType,
+        charge_percent: String(normalizedChargePercent),
+        charge_amount: roundedChargeAmount.toFixed(2),
         source: 'stripe_payment_link',
       },
       payment_intent_data: {
@@ -123,14 +151,16 @@ export async function POST(request: NextRequest) {
           job_id: invoice.job_id,
           invoice_number: String(invoice.invoice_number),
           due_date: invoice.due_date,
-          payment_type: 'final',
+          payment_type: paymentType,
+          charge_percent: String(normalizedChargePercent),
+          charge_amount: roundedChargeAmount.toFixed(2),
           source: 'stripe_payment_link',
         },
       },
       after_completion: {
         type: 'hosted_confirmation',
         hosted_confirmation: {
-          custom_message: `Thanks for paying ${invoiceLabel}. MetroGlass Pro has your payment.`,
+          custom_message: `Thanks for paying ${chargeLabel.toLowerCase()} for ${invoiceLabel}. MetroGlass Pro has your payment.`,
         },
       },
     })
@@ -138,7 +168,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       url: paymentLink.url,
       balanceDue,
-      amountCents: balanceDueCents,
+      chargeAmount: roundedChargeAmount,
+      chargePercent: normalizedChargePercent,
+      amountCents: chargeAmountCents,
+      paymentType,
     })
   } catch (error) {
     console.error('Stripe payment link error:', error)
