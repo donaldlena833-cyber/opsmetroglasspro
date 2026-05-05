@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { jsPDF } from 'jspdf'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { getServiceSupabaseEnv } from '@/lib/env'
+import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
 import { buildJobInvoiceDescription } from '@/lib/invoice-builder'
 
 interface LineItem {
@@ -18,11 +19,30 @@ function formatMoney(value: number) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await createServerSupabaseClient()
+    const {
+      data: { user },
+    } = await session.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { url: supabaseUrl, serviceRoleKey: supabaseServiceKey } = getServiceSupabaseEnv()
     const { invoiceId } = await request.json()
 
     if (!invoiceId) {
       return NextResponse.json({ error: 'Invoice ID required' }, { status: 400 })
+    }
+
+    const { data: ownedInvoice, error: ownedError } = await session
+      .from('invoices')
+      .select('id')
+      .eq('id', invoiceId)
+      .maybeSingle()
+
+    if (ownedError || !ownedInvoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -122,7 +142,7 @@ export async function POST(request: NextRequest) {
     doc.setTextColor(bronze)
     doc.text(`#${invoice.invoice_number}`, pageWidth - margin, 25, { align: 'right' })
     doc.setTextColor(muted)
-    doc.text(`Created ${format(new Date(invoice.invoice_date), 'MMM d, yyyy')}`, pageWidth - margin, 31, { align: 'right' })
+    doc.text(`Created ${format(parseISO(invoice.invoice_date), 'MMM d, yyyy')}`, pageWidth - margin, 31, { align: 'right' })
 
     yPos = headerHeight + 10
 
@@ -135,8 +155,8 @@ export async function POST(request: NextRequest) {
     ])
 
     drawInfoCard(pageWidth - margin - 88, yPos, 88, 'Invoice Details', [
-      `Invoice Date: ${format(new Date(invoice.invoice_date), 'MMM d, yyyy')}`,
-      `Due Date: ${format(new Date(invoice.due_date), 'MMM d, yyyy')}`,
+      `Invoice Date: ${format(parseISO(invoice.invoice_date), 'MMM d, yyyy')}`,
+      `Due Date: ${format(parseISO(invoice.due_date), 'MMM d, yyyy')}`,
       job?.job_name ? `Project: ${job.job_name}` : '',
     ])
 
