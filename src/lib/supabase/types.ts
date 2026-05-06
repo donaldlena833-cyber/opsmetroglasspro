@@ -282,6 +282,7 @@ export interface Database {
           method: PaymentMethod
           note: string | null
           confirmation_image_url: string | null
+          stripe_event_id: string | null
           created_at: string
           updated_at: string
         }
@@ -297,6 +298,7 @@ export interface Database {
           method?: PaymentMethod
           note?: string | null
           confirmation_image_url?: string | null
+          stripe_event_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -312,6 +314,7 @@ export interface Database {
           method?: PaymentMethod
           note?: string | null
           confirmation_image_url?: string | null
+          stripe_event_id?: string | null
           created_at?: string
           updated_at?: string
         }

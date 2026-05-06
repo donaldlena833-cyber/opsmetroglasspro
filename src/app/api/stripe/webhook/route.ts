@@ -17,7 +17,7 @@ function getMetadataValue(metadata: Stripe.Metadata | null | undefined, key: str
   return typeof value === 'string' && value.length > 0 ? value : null
 }
 
-async function syncCheckoutSessionPayment(stripe: Stripe, session: Stripe.Checkout.Session) {
+async function syncCheckoutSessionPayment(stripe: Stripe, session: Stripe.Checkout.Session, eventId: string) {
   if (!session.payment_intent || typeof session.payment_intent !== 'string') {
     return
   }
@@ -39,16 +39,6 @@ async function syncCheckoutSessionPayment(stripe: Stripe, session: Stripe.Checko
 
   const { url, serviceRoleKey } = getServiceSupabaseEnv()
   const supabase = createClient(url, serviceRoleKey)
-
-  const { data: existingPayment } = await supabase
-    .from('payments')
-    .select('id')
-    .eq('note', note)
-    .maybeSingle()
-
-  if (existingPayment) {
-    return
-  }
 
   const grossAmount = Number(session.amount_total || 0) / 100
 
@@ -75,9 +65,15 @@ async function syncCheckoutSessionPayment(stripe: Stripe, session: Stripe.Checko
     payment_type: paymentType,
     method: 'stripe',
     note,
+    stripe_event_id: eventId,
   })
 
   if (insertError) {
+    // 23505 = unique_violation: another delivery of the same Stripe event
+    // already inserted this payment. Treat as idempotent success.
+    if ((insertError as { code?: string }).code === '23505') {
+      return
+    }
     throw insertError
   }
 
@@ -146,13 +142,13 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session
 
         if (session.payment_status === 'paid') {
-          await syncCheckoutSessionPayment(stripe, session)
+          await syncCheckoutSessionPayment(stripe, session, event.id)
         }
         break
       }
       case 'checkout.session.async_payment_succeeded': {
         const session = event.data.object as Stripe.Checkout.Session
-        await syncCheckoutSessionPayment(stripe, session)
+        await syncCheckoutSessionPayment(stripe, session, event.id)
         break
       }
       default:
