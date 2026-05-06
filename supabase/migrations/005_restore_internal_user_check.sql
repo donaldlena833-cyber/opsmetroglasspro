@@ -8,6 +8,10 @@
 --              bucket. This restores the email-domain check so only
 --              @metroglasspro.com accounts pass.
 
+-- Allowlist of internal owner emails. Add additional logins here (one per
+-- line) if more people need dashboard access. Keeping the personal gmail
+-- address explicit avoids the lockout that triggered the original 003
+-- relaxation.
 CREATE OR REPLACE FUNCTION public.is_internal_user()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -15,5 +19,10 @@ STABLE
 SET search_path = public, auth
 AS $$
   SELECT auth.uid() IS NOT NULL
-    AND COALESCE(LOWER(auth.jwt() ->> 'email'), '') LIKE '%@metroglasspro.com';
+    AND (
+      COALESCE(LOWER(auth.jwt() ->> 'email'), '') LIKE '%@metroglasspro.com'
+      OR COALESCE(LOWER(auth.jwt() ->> 'email'), '') IN (
+        'donaldlena833@gmail.com'
+      )
+    );
 $$;
