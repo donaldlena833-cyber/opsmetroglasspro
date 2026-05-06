@@ -71,7 +71,8 @@ export function ReminderBanners({ reminders }: ReminderBannersProps) {
       {sortedReminders.map((reminder) => {
         const config = reminderPriorityConfig[reminder.priority]
         const dateLabel = getDateLabel(reminder.reminder_date)
-        const isOverdue = isPast(new Date(reminder.reminder_date)) && !isToday(new Date(reminder.reminder_date))
+        const reminderDate = parseISO(reminder.reminder_date)
+        const isOverdue = isPast(reminderDate) && !isToday(reminderDate)
         const badgeVariant =
           reminder.priority === 'high'
             ? 'danger'

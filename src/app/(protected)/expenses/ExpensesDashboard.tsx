@@ -43,7 +43,7 @@ import {
   cn,
 } from '@/lib/utils'
 import { ExpenseCategory, ExpenseWithJob } from '@/lib/supabase/types'
-import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
+import { endOfMonth, format, parseISO, startOfMonth, subMonths } from 'date-fns'
 
 type ExpenseRecord = ExpenseWithJob & {
   jobs: { id: string; job_name: string } | null
@@ -127,7 +127,9 @@ export function ExpensesDashboard({ data }: ExpensesDashboardProps) {
         return false
       }
 
-      const expenseDate = new Date(expense.date)
+      // expense.date is a YYYY-MM-DD column; parseISO keeps it on the local
+      // calendar instead of slipping a day in EST.
+      const expenseDate = parseISO(expense.date)
 
       switch (timeFilter) {
         case 'this_month':
@@ -135,7 +137,9 @@ export function ExpensesDashboard({ data }: ExpensesDashboardProps) {
         case 'last_month':
           return expenseDate >= startOfMonth(lastMonth) && expenseDate <= endOfMonth(lastMonth)
         case 'last_3_months':
-          return expenseDate >= startOfMonth(threeMonthsAgo)
+          // The 3 prior complete months, excluding the current one, so the
+          // window is consistent with how 'last_month' is bounded above.
+          return expenseDate >= startOfMonth(threeMonthsAgo) && expenseDate <= endOfMonth(lastMonth)
         case 'all':
         default:
           return true
