@@ -112,6 +112,11 @@ export default function NewPaymentPage() {
       return
     }
 
+    if (!Number.isFinite(grossAmountNum) || grossAmountNum <= 0) {
+      toast({ title: 'Error', description: 'Amount must be greater than zero', variant: 'destructive' })
+      return
+    }
+
     setLoading(true)
 
     // V2: Store gross amount, calculate fee, store net amount

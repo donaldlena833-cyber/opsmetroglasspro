@@ -100,11 +100,17 @@ export default function NewExpensePage() {
       return
     }
 
+    const amountNum = parseFloat(amount)
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      toast({ title: 'Error', description: 'Amount must be greater than zero', variant: 'destructive' })
+      return
+    }
+
     setLoading(true)
 
     const { error } = await supabase.from('expenses').insert({
       job_id: jobId,
-      amount: parseFloat(amount),
+      amount: amountNum,
       vendor,
       category,
       payment_method: paymentMethod,

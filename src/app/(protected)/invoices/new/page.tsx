@@ -312,6 +312,16 @@ export default function NewInvoicePage() {
       return
     }
 
+    if (discountApplied && (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100)) {
+      toast({ title: 'Error', description: 'Discount must be between 0 and 100%.', variant: 'destructive' })
+      return
+    }
+
+    if (taxApplied && (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100)) {
+      toast({ title: 'Error', description: 'Tax rate must be between 0 and 100%.', variant: 'destructive' })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -820,6 +830,9 @@ export default function NewInvoicePage() {
                     <Input
                       type="number"
                       label="Discount %"
+                      min={0}
+                      max={100}
+                      step={0.1}
                       value={discountPercent}
                       onChange={(e) => setDiscountPercent(Number(e.target.value))}
                     />
