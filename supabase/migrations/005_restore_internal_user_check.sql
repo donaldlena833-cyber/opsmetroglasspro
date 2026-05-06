@@ -22,6 +22,7 @@ AS $$
     AND (
       COALESCE(LOWER(auth.jwt() ->> 'email'), '') LIKE '%@metroglasspro.com'
       OR COALESCE(LOWER(auth.jwt() ->> 'email'), '') IN (
+        'operations@metroglasspro.com',
         'donaldlena833@gmail.com'
       )
     );
