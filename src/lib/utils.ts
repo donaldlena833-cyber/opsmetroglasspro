@@ -256,6 +256,22 @@ export const taxRatePresets = [
   { label: 'CT (6.35%)', value: 6.35 },
 ]
 
+// File upload guard. Browsers treat the input `accept` attribute as a hint
+// only, and a single mis-pasted DSLR photo can blow the storage quota. Cap
+// at 10 MB and reject anything that isn't an image or PDF.
+export const MAX_RECEIPT_BYTES = 10 * 1024 * 1024
+export function validateReceiptFile(file: File): { ok: true } | { ok: false; reason: string } {
+  if (file.size > MAX_RECEIPT_BYTES) {
+    return { ok: false, reason: `File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max is 10 MB.` }
+  }
+  const isImage = file.type.startsWith('image/')
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+  if (!isImage && !isPdf) {
+    return { ok: false, reason: 'Only image or PDF files are allowed.' }
+  }
+  return { ok: true }
+}
+
 // V2: Stripe fee calculation (2.9% + $0.30)
 export function calculateStripeFee(grossAmount: number): { fee: number; netAmount: number } {
   const fee = (grossAmount * 0.029) + 0.30

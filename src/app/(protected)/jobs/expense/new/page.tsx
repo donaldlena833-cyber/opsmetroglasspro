@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 import { ArrowLeft, Upload, X, Search, Camera } from 'lucide-react'
-import { expenseCategoryConfig, paymentMethodConfig } from '@/lib/utils'
+import { expenseCategoryConfig, paymentMethodConfig, validateReceiptFile } from '@/lib/utils'
 import { ExpenseCategory, PaymentMethod, Job } from '@/lib/supabase/types'
 
 export default function NewExpensePage() {
@@ -70,6 +70,13 @@ export default function NewExpensePage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const check = validateReceiptFile(file)
+    if (!check.ok) {
+      toast({ title: 'Cannot upload', description: check.reason, variant: 'destructive' })
+      e.target.value = ''
+      return
+    }
 
     setUploading(true)
     setReceiptPreview(URL.createObjectURL(file))

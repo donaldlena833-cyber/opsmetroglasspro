@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ArrowLeft, Camera, Loader2, Search, Upload, X, CheckCircle } from 'lucide-react'
-import { expenseCategoryConfig, paymentMethodConfig } from '@/lib/utils'
+import { expenseCategoryConfig, paymentMethodConfig, validateReceiptFile } from '@/lib/utils'
 import { ExpenseCategory, PaymentMethod } from '@/lib/supabase/types'
 
 export default function QuickExpensePage() {
@@ -77,6 +77,13 @@ export default function QuickExpensePage() {
     const file = e.target.files?.[0]
     if (!file) {
       router.back()
+      return
+    }
+
+    const check = validateReceiptFile(file)
+    if (!check.ok) {
+      toast({ title: 'Cannot upload', description: check.reason, variant: 'destructive' })
+      e.target.value = ''
       return
     }
 

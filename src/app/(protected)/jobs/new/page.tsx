@@ -102,12 +102,12 @@ export default function NewJobPage() {
       const parsedQuotedPrice = quotedPrice ? Number(quotedPrice) : null
       const parsedDepositAmount = depositAmount ? Number(depositAmount) : null
 
-      if (parsedQuotedPrice !== null && Number.isNaN(parsedQuotedPrice)) {
-        throw new Error('Quoted price must be a valid number')
+      if (parsedQuotedPrice !== null && (Number.isNaN(parsedQuotedPrice) || parsedQuotedPrice < 0)) {
+        throw new Error('Quoted price must be a positive number')
       }
 
-      if (parsedDepositAmount !== null && Number.isNaN(parsedDepositAmount)) {
-        throw new Error('Deposit amount must be a valid number')
+      if (parsedDepositAmount !== null && (Number.isNaN(parsedDepositAmount) || parsedDepositAmount < 0)) {
+        throw new Error('Deposit amount must be a positive number')
       }
 
       if (
@@ -116,6 +116,10 @@ export default function NewJobPage() {
         parsedDepositAmount > parsedQuotedPrice
       ) {
         throw new Error('Deposit amount cannot be higher than the quoted price')
+      }
+
+      if (installDate && installEndDate && installEndDate < installDate) {
+        throw new Error('Install end date cannot be before the install start date')
       }
 
       let clientId = selectedClientId
