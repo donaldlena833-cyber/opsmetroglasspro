@@ -27,7 +27,7 @@ async function getReportsData() {
   // Get this month's payments
   const { data: monthPayments } = await supabase
     .from('payments')
-    .select('amount, method, date')
+    .select('amount, gross_amount, method, date')
     .gte('date', format(monthStart, 'yyyy-MM-dd'))
     .lte('date', format(monthEnd, 'yyyy-MM-dd'))
 
@@ -41,7 +41,7 @@ async function getReportsData() {
   // Get last month's payments for comparison
   const { data: lastMonthPayments } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, gross_amount')
     .gte('date', format(lastMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(lastMonthEnd, 'yyyy-MM-dd'))
 
@@ -55,7 +55,7 @@ async function getReportsData() {
   // Get quarterly payments
   const { data: quarterPayments } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, gross_amount')
     .gte('date', format(quarterStart, 'yyyy-MM-dd'))
     .lte('date', format(quarterEnd, 'yyyy-MM-dd'))
 
@@ -69,7 +69,7 @@ async function getReportsData() {
   // Get yearly payments
   const { data: yearPayments } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, gross_amount')
     .gte('date', format(yearStart, 'yyyy-MM-dd'))
     .lte('date', format(yearEnd, 'yyyy-MM-dd'))
 
@@ -89,7 +89,7 @@ async function getReportsData() {
       status,
       invoices (total),
       expenses (amount),
-      payments (amount)
+      payments (amount, gross_amount)
     `)
     .eq('status', 'closed')
     .order('updated_at', { ascending: false })
@@ -104,7 +104,7 @@ async function getReportsData() {
     
     const { data: mPayments } = await supabase
       .from('payments')
-      .select('amount')
+      .select('amount, gross_amount')
       .gte('date', format(mStart, 'yyyy-MM-dd'))
       .lte('date', format(mEnd, 'yyyy-MM-dd'))
 
@@ -117,19 +117,19 @@ async function getReportsData() {
     monthlyTrend.push({
       month: format(m, 'MMM yyyy'),
       monthShort: format(m, 'MMM'),
-      revenue: mPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0,
+      revenue: mPayments?.reduce((sum, p) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0,
       expenses: mExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0,
     })
   }
 
   // Calculate totals
-  const monthRevenue = monthPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
+  const monthRevenue = monthPayments?.reduce((sum, p) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0
   const monthExpenseTotal = monthExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0
-  const lastMonthRevenue = lastMonthPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
+  const lastMonthRevenue = lastMonthPayments?.reduce((sum, p) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0
   const lastMonthExpenseTotal = lastMonthExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0
-  const quarterRevenue = quarterPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
+  const quarterRevenue = quarterPayments?.reduce((sum, p) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0
   const quarterExpenseTotal = quarterExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0
-  const yearRevenue = yearPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
+  const yearRevenue = yearPayments?.reduce((sum, p) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0
   const yearExpenseTotal = yearExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0
 
   // Group expenses by category
@@ -140,7 +140,7 @@ async function getReportsData() {
 
   // Group payments by method
   const paymentsByMethod = (monthPayments || []).reduce((acc, p) => {
-    acc[p.method] = (acc[p.method] || 0) + Number(p.amount)
+    acc[p.method] = (acc[p.method] || 0) + Number(p.gross_amount ?? p.amount ?? 0)
     return acc
   }, {} as Record<string, number>)
 
@@ -148,7 +148,7 @@ async function getReportsData() {
   const jobProfitMargins = (jobsWithInvoices || []).map(job => {
     const invoiceTotal = job.invoices?.reduce((sum: number, i: any) => sum + Number(i.total || 0), 0) || 0
     const expenseTotal = job.expenses?.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) || 0
-    const paymentTotal = job.payments?.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0) || 0
+    const paymentTotal = job.payments?.reduce((sum: number, p: any) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0
     const profit = paymentTotal - expenseTotal
     const margin = paymentTotal > 0 ? (profit / paymentTotal) * 100 : 0
     

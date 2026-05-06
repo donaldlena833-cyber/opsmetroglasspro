@@ -18,7 +18,7 @@ async function getJobs() {
       *,
       clients (id, name, email, phone),
       invoices (id, total),
-      payments (id, amount),
+      payments (id, amount, gross_amount),
       expenses (id, amount)
     `)
     .order('created_at', { ascending: false })
@@ -42,7 +42,7 @@ async function getJobs() {
     ...job,
     total_invoice_value: job.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0) || 0,
     invoice_count: job.invoices?.length || 0,
-    total_revenue: job.payments?.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0) || 0,
+    total_revenue: job.payments?.reduce((sum: number, p: any) => sum + Number(p.gross_amount ?? p.amount ?? 0), 0) || 0,
     total_expenses: job.expenses?.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) || 0,
     registered_job_value: getRegisteredJobValue(
       job.quoted_price,

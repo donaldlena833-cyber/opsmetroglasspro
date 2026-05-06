@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { format, isPast, isToday, isTomorrow } from 'date-fns'
+import { format, isPast, isToday, isTomorrow, parseISO } from 'date-fns'
 import { AlertCircle, Bell, Check, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -50,7 +50,7 @@ export function ReminderBanners({ reminders }: ReminderBannersProps) {
   }
 
   const getDateLabel = (date: string) => {
-    const parsed = new Date(date)
+    const parsed = parseISO(date)
     if (isPast(parsed) && !isToday(parsed)) return 'Overdue'
     if (isToday(parsed)) return 'Today'
     if (isTomorrow(parsed)) return 'Tomorrow'

@@ -64,7 +64,7 @@ async function getDashboardData() {
 
   const { data: payments } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, gross_amount')
     .gte('date', format(monthStart, 'yyyy-MM-dd'))
     .lte('date', format(monthEnd, 'yyyy-MM-dd'))
 
@@ -76,7 +76,7 @@ async function getDashboardData() {
 
   const { data: lastMonthPayments } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, gross_amount')
     .gte('date', format(lastMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(lastMonthEnd, 'yyyy-MM-dd'))
 
@@ -151,10 +151,10 @@ export default async function TodayPage() {
   const data = await getDashboardData()
   const now = new Date()
 
-  const monthlyRevenue = data.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const monthlyRevenue = data.payments.reduce((sum, payment) => sum + Number(payment.gross_amount ?? payment.amount ?? 0), 0)
   const monthlyExpenses = data.expenses.reduce((sum, expense) => sum + Number(expense.amount), 0)
   const monthlyNet = monthlyRevenue - monthlyExpenses
-  const lastMonthRevenue = data.lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const lastMonthRevenue = data.lastMonthPayments.reduce((sum, payment) => sum + Number(payment.gross_amount ?? payment.amount ?? 0), 0)
   const motivationalMessage = getMotivationalMessage(monthlyRevenue, lastMonthRevenue)
 
   const expensesByCategory = data.expenses.reduce((accumulator, expense) => {

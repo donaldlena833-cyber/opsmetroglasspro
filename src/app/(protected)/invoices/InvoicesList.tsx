@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ArrowUpDown, CalendarRange, ChevronRight, FileText, Search } from 'lucide-react'
+import { format } from 'date-fns'
 import { formatCurrency, formatDateShort, formatRelativeDate, invoiceStatusConfig, cn } from '@/lib/utils'
 import { InvoiceWithJob, InvoiceStatus } from '@/lib/supabase/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -201,10 +202,13 @@ export function InvoicesList({ initialInvoices }: InvoicesListProps) {
         <div className="space-y-3">
           {filteredInvoices.map((invoice) => {
             const statusConfig = invoiceStatusConfig[invoice.status]
+            // Compare YYYY-MM-DD strings to avoid TZ skew: a due_date of
+            // 2026-05-04 should not be "past due" on May 3rd evening EST.
+            const today = format(new Date(), 'yyyy-MM-dd')
             const isPastDue =
               invoice.status !== 'paid' &&
               !!invoice.due_date &&
-              new Date(invoice.due_date).getTime() < Date.now()
+              invoice.due_date < today
 
             return (
               <Card

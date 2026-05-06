@@ -20,7 +20,22 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  const { url, anonKey } = getPublicSupabaseEnv()
+  let url: string
+  let anonKey: string
+  try {
+    ;({ url, anonKey } = getPublicSupabaseEnv())
+  } catch (error) {
+    // Env not configured yet (preview deploys, fresh setup). Don't 500
+    // every protected request — let the page render so it can show a
+    // setup-friendly error instead of an opaque middleware crash.
+    console.error('Supabase env missing in middleware:', error)
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

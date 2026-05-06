@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { format, formatDistanceToNow, isToday, isTomorrow, isYesterday, isPast, addDays, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns'
+import { format, formatDistanceToNow, isToday, isTomorrow, isYesterday, isPast, addDays, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter, startOfYear, endOfYear, parseISO } from 'date-fns'
 import { JobStatus, ExpenseCategory, PaymentMethod, PaymentType, InvoiceStatus, ReminderPriority, GlassType, GlassThickness, HardwareFinish } from './supabase/types'
 
 export function cn(...inputs: ClassValue[]) {
@@ -17,21 +17,27 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+// Postgres DATE columns (e.g. "2026-05-04") are parsed by `new Date()` as UTC
+// midnight, which renders as the previous day in any timezone west of UTC.
+// parseISO from date-fns parses date-only strings as local midnight, which is
+// what we want for display. Timestamptz strings still parse correctly.
+function toLocalDate(date: string | Date): Date {
+  return typeof date === 'string' ? parseISO(date) : date
+}
+
 // Format date for display
 export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return format(d, 'MMM d, yyyy')
+  return format(toLocalDate(date), 'MMM d, yyyy')
 }
 
 // Format date short
 export function formatDateShort(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return format(d, 'MMM d')
+  return format(toLocalDate(date), 'MMM d')
 }
 
 // Format relative date
 export function formatRelativeDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = toLocalDate(date)
   if (isToday(d)) return 'Today'
   if (isTomorrow(d)) return 'Tomorrow'
   if (isYesterday(d)) return 'Yesterday'
@@ -313,14 +319,22 @@ export function getJobAttentionStatus(job: {
   return { needsAttention: false }
 }
 
-// Calculate net profit for a job
-export function calculateJobNet(payments: { amount: number }[], expenses: { amount: number }[]): {
+// Calculate net profit for a job. Revenue uses gross_amount when present
+// (Stripe payments store gross + fee separately) and falls back to amount
+// for cash/check/Zelle, matching the webhook's invoice-paid calculation.
+export function calculateJobNet(
+  payments: { amount: number; gross_amount?: number | null }[],
+  expenses: { amount: number }[]
+): {
   revenue: number
   costs: number
   net: number
   margin: number
 } {
-  const revenue = payments.reduce((sum, p) => sum + Number(p.amount), 0)
+  const revenue = payments.reduce(
+    (sum, p) => sum + Number(p.gross_amount ?? p.amount ?? 0),
+    0
+  )
   const costs = expenses.reduce((sum, e) => sum + Number(e.amount), 0)
   const net = revenue - costs
   const margin = revenue > 0 ? (net / revenue) * 100 : 0
