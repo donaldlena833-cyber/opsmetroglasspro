@@ -213,8 +213,40 @@ curl -s https://www.ops.metroglasspro.com/api/v1/clients \
 ### `GET /api/v1/invoices` — list invoices
 
 Scope: `read`. Query params: `status` (`sent` | `deposit_paid` | `paid`),
-`job_id`, `limit` (max 200, default 50). Each row includes the linked job
-basics and the `pdf_url` if generated.
+`job_id`, `limit` (max 200, default 50), `before` (cursor, see below).
+Each row includes the linked job basics and the `pdf_url` if generated.
+
+### `GET /api/v1/payment-events` — Stripe webhook event log
+
+Scope: `read`. Query params: `event_type` (e.g. `charge.refunded`),
+`limit`, `before`. Backed by the `payment_events` table that the webhook
+populates for `charge.refunded`, `charge.dispute.created`, and
+`charge.dispute.closed` events. Use this to surface refunds and disputes
+the bot should flag for manual reconciliation — the ledger does not
+auto-mutate on these yet, so they need follow-up in the dashboard.
+
+```
+curl -s "https://www.ops.metroglasspro.com/api/v1/payment-events?event_type=charge.refunded&limit=10" \
+  -H "Authorization: Bearer $MGOPS_TOKEN"
+```
+
+## Pagination
+
+`/api/v1/jobs`, `/api/v1/invoices`, `/api/v1/clients`, and
+`/api/v1/payment-events` return `next_cursor` (ISO timestamp) when the page
+is full. Pass it as `?before=<cursor>` on the next request to walk
+backwards in time. When `next_cursor` is `null`, you've hit the end.
+
+```
+# pseudo-code
+cursor = None
+while True:
+    res = GET /api/v1/jobs?limit=200 + (f"&before={cursor}" if cursor else "")
+    process(res["jobs"])
+    cursor = res["next_cursor"]
+    if not cursor:
+        break
+```
 
 ## Notes for the bot
 

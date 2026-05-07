@@ -26,6 +26,11 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url)
     const search = (url.searchParams.get('search') ?? '').trim()
     const limit = clampLimit(url.searchParams.get('limit'))
+    const before = url.searchParams.get('before')
+
+    if (before && Number.isNaN(Date.parse(before))) {
+      return badRequest('`before` must be an ISO-8601 timestamp from a prior page.')
+    }
 
     let query = auth.supabase
       .from('clients')
@@ -37,11 +42,14 @@ export async function GET(request: NextRequest) {
       // ilike is case-insensitive substring match
       query = query.ilike('name', `%${search.replace(/[%_]/g, m => `\\${m}`)}%`)
     }
+    if (before) query = query.lt('created_at', before)
 
     const { data, error } = await query
     if (error) return internalError(error)
 
-    return NextResponse.json({ clients: data ?? [] })
+    const clients = data ?? []
+    const nextCursor = clients.length === limit ? clients[clients.length - 1].created_at : null
+    return NextResponse.json({ clients, next_cursor: nextCursor })
   } catch (error) {
     return internalError(error)
   }

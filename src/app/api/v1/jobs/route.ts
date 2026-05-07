@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url)
     const status = url.searchParams.get('status')
     const limit = clampLimit(url.searchParams.get('limit'))
+    const before = url.searchParams.get('before')
 
     let query = auth.supabase
       .from('jobs')
@@ -55,10 +56,19 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status as JobStatus)
     }
 
+    if (before) {
+      if (Number.isNaN(Date.parse(before))) {
+        return badRequest('`before` must be an ISO-8601 timestamp from a prior page.')
+      }
+      query = query.lt('created_at', before)
+    }
+
     const { data, error } = await query
     if (error) return internalError(error)
 
-    return NextResponse.json({ jobs: data ?? [] })
+    const jobs = data ?? []
+    const nextCursor = jobs.length === limit ? jobs[jobs.length - 1].created_at : null
+    return NextResponse.json({ jobs, next_cursor: nextCursor })
   } catch (error) {
     return internalError(error)
   }

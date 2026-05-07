@@ -29,12 +29,16 @@ export async function GET(request: NextRequest) {
     const status = url.searchParams.get('status')
     const jobId = url.searchParams.get('job_id')
     const limit = clampLimit(url.searchParams.get('limit'))
+    const before = url.searchParams.get('before')
 
     if (status && !ALLOWED_STATUSES.includes(status as InvoiceStatus)) {
       return badRequest(`Unknown status '${status}'.`, { allowed: ALLOWED_STATUSES })
     }
     if (jobId && !UUID_RE.test(jobId)) {
       return badRequest('`job_id` must be a UUID.')
+    }
+    if (before && Number.isNaN(Date.parse(before))) {
+      return badRequest('`before` must be an ISO-8601 timestamp from a prior page.')
     }
 
     let query = auth.supabase
@@ -46,16 +50,19 @@ export async function GET(request: NextRequest) {
          pdf_url, job_id, created_at, updated_at,
          jobs (id, job_name, address)`
       )
-      .order('invoice_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit)
 
     if (status) query = query.eq('status', status as InvoiceStatus)
     if (jobId) query = query.eq('job_id', jobId)
+    if (before) query = query.lt('created_at', before)
 
     const { data, error } = await query
     if (error) return internalError(error)
 
-    return NextResponse.json({ invoices: data ?? [] })
+    const invoices = data ?? []
+    const nextCursor = invoices.length === limit ? invoices[invoices.length - 1].created_at : null
+    return NextResponse.json({ invoices, next_cursor: nextCursor })
   } catch (error) {
     return internalError(error)
   }

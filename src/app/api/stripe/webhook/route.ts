@@ -151,6 +151,16 @@ export async function POST(request: NextRequest) {
         await syncCheckoutSessionPayment(stripe, session, event.id)
         break
       }
+      case 'charge.refunded':
+      case 'charge.dispute.created':
+      case 'charge.dispute.closed': {
+        // The ledger does not yet mutate on refund/dispute — that requires a
+        // schema decision (negative payment row vs separate refunds table).
+        // For now, capture the raw event in payment_events so the operator
+        // can SELECT it out and reconcile manually.
+        await recordPaymentEvent(event)
+        break
+      }
       default:
         break
     }
@@ -163,5 +173,56 @@ export async function POST(request: NextRequest) {
       { error: error instanceof Error ? error.message : 'Webhook processing failed.' },
       { status: 500 }
     )
+  }
+}
+
+async function recordPaymentEvent(event: Stripe.Event) {
+  const { url, serviceRoleKey } = getServiceSupabaseEnv()
+  const supabase = createClient(url, serviceRoleKey)
+
+  // Try to surface the dollar amount and link to a known payment by
+  // payment_intent. Both are best-effort — the raw event is the source of
+  // truth.
+  let amount: number | null = null
+  let paymentId: string | null = null
+  let invoiceId: string | null = null
+  let jobId: string | null = null
+
+  const data = event.data.object as unknown as Record<string, unknown>
+  if (data && typeof data === 'object') {
+    const charge = data as Partial<Stripe.Charge> & { amount_refunded?: number; payment_intent?: string }
+    if (typeof charge.amount_refunded === 'number') {
+      amount = charge.amount_refunded / 100
+    } else if (typeof charge.amount === 'number') {
+      amount = charge.amount / 100
+    }
+    const paymentIntent = typeof charge.payment_intent === 'string' ? charge.payment_intent : null
+    if (paymentIntent) {
+      const { data: matched } = await supabase
+        .from('payments')
+        .select('id, invoice_id, job_id')
+        .ilike('note', `%intent=${paymentIntent}%`)
+        .maybeSingle()
+      if (matched) {
+        paymentId = matched.id
+        invoiceId = matched.invoice_id
+        jobId = matched.job_id
+      }
+    }
+  }
+
+  const { error } = await supabase.from('payment_events').insert({
+    stripe_event_id: event.id,
+    event_type: event.type,
+    payment_id: paymentId,
+    invoice_id: invoiceId,
+    job_id: jobId,
+    amount,
+    raw: event as unknown as Record<string, unknown>,
+  })
+
+  // 23505 = unique violation = duplicate delivery; treat as no-op.
+  if (error && (error as { code?: string }).code !== '23505') {
+    throw error
   }
 }
