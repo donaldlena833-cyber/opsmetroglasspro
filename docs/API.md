@@ -176,6 +176,46 @@ curl -s https://www.ops.metroglasspro.com/api/v1/reminders \
   }'
 ```
 
+### `PATCH /api/v1/reminders/{id}` — toggle done / edit
+
+Scope: `write`. Send any subset of `done` (boolean), `title`,
+`reminder_date`, `priority`.
+
+```
+curl -s -X PATCH https://www.ops.metroglasspro.com/api/v1/reminders/<id> \
+  -H "Authorization: Bearer $MGOPS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "done": true }'
+```
+
+### `GET /api/v1/clients` — list clients
+
+Scope: `read`. Query params: `search` (case-insensitive name match), `limit`
+(max 200, default 50).
+
+### `POST /api/v1/clients` — create a client
+
+Scope: `write`. Required: `name`. Optional: `email`, `phone`,
+`billing_address`. Common pattern: bot creates a new client, captures the
+returned `id`, then POSTs `/api/v1/jobs` with `client_id` set to that id.
+
+```
+curl -s https://www.ops.metroglasspro.com/api/v1/clients \
+  -H "Authorization: Bearer $MGOPS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Smith Family Trust",
+    "email": "smith@example.com",
+    "phone": "212-555-0188"
+  }'
+```
+
+### `GET /api/v1/invoices` — list invoices
+
+Scope: `read`. Query params: `status` (`sent` | `deposit_paid` | `paid`),
+`job_id`, `limit` (max 200, default 50). Each row includes the linked job
+basics and the `pdf_url` if generated.
+
 ## Notes for the bot
 
 - The API ignores RLS — the keys themselves are the auth boundary. Scope a
