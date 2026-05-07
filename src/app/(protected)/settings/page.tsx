@@ -15,6 +15,7 @@ import {
   Building2,
   Download,
   Info,
+  KeyRound,
   LogOut,
   Mail,
   Moon,
@@ -54,6 +55,12 @@ export default function SettingsPage() {
       title: 'Expenses',
       description: 'Review spend history and receipt files quickly.',
       icon: Receipt,
+    },
+    {
+      href: '/settings/api-keys',
+      title: 'API Keys',
+      description: 'Issue and revoke Bearer tokens for /api/v1/* — bots, permit-pulse, integrations.',
+      icon: KeyRound,
     },
   ]
 
